@@ -17,7 +17,7 @@ describe('Google Business Lead Hunter Suite', () => {
     expect(first.phone).toMatch(/^\+91/);
     expect(first.hasWebsite).toBe(false);
     expect(first.opportunityScore).toBe('Hot');
-    expect(first.googleMapsUrl).toContain('maps.google.com');
+    expect(first.googleMapsUrl).toContain('google.com/maps');
   });
 
   test('generates tailored WhatsApp and phone pitch script with business name and rating', async () => {

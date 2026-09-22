@@ -170,9 +170,9 @@ export const LeadHunterPage: React.FC = () => {
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Google Business &amp; Local Maps Intelligence</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>100% Free OpenStreetMap &amp; Maps Intelligence • Zero API Cost</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Automatic Lead Hunter
