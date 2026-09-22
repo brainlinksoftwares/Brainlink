@@ -13,13 +13,10 @@ import {
   Layers,
   ArrowRight,
   Clock,
-  IndianRupee,
   MessageSquare,
   Award,
   Zap,
-  HelpCircle,
   X,
-  PhoneCall,
   Check,
 } from 'lucide-react';
 import { leadService } from '../services/leadService';

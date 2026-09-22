@@ -14,7 +14,6 @@ import {
   Copy,
   ExternalLink,
   Loader2,
-  Filter,
   Sparkles,
   Download,
   AlertCircle,
@@ -43,7 +42,7 @@ export const LeadHunterPage: React.FC = () => {
   const [query, setQuery] = useState('Barber');
   const [location, setLocation] = useState('Noida');
   const [onlyMissingWebsite, setOnlyMissingWebsite] = useState(true);
-  const [minRating, setMinRating] = useState(4.0);
+  const minRating = 4.0;
 
   const [loading, setLoading] = useState(false);
   const [leads, setLeads] = useState<ExtractedLead[]>([]);
