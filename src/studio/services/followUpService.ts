@@ -1,4 +1,4 @@
-import { FollowUp, FollowUpStatus, FollowUpType } from '../types';
+import { FollowUp } from '../types';
 import { storageEngine } from './storageEngine';
 import { activityService } from './activityService';
 

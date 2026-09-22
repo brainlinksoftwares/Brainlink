@@ -4,13 +4,6 @@ import {
   Send,
   Loader2,
   CheckCircle2,
-  AlertCircle,
-  Building,
-  User,
-  Phone,
-  Mail,
-  Globe,
-  Briefcase,
   ShieldCheck,
 } from 'lucide-react';
 import { leadService } from '../services/leadService';

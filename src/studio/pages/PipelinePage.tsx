@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  KanbanSquare,
   Plus,
   ArrowRight,
   ArrowLeft,
-  DollarSign,
   Building,
-  UserCheck,
-  ChevronRight,
   Table as TableIcon,
 } from 'lucide-react';
 import { leadService } from '../services/leadService';
 import { Lead, LeadStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { StatusBadge, PriorityBadge } from '../components/common/StatusBadge';
+import { PriorityBadge } from '../components/common/StatusBadge';
 import { DEFAULT_LEAD_STATUSES } from '../config/crmConfig';
 import { EmptyState } from '../components/common/EmptyState';
 

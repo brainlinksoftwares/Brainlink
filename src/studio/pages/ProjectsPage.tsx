@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Briefcase,
   Plus,
-  Calendar,
-  Building,
-  Users,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
 } from 'lucide-react';
 import { projectService } from '../services/projectService';
 import { clientService } from '../services/clientService';
@@ -281,6 +274,19 @@ export const ProjectsPage: React.FC = () => {
                     onChange={(e) => setValue(Number(e.target.value))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl"
                   />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block font-semibold text-slate-700 mb-1">Initial Status</label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as ProjectStatus)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                  >
+                    <option value="Planning">Planning</option>
+                    <option value="Active">Active</option>
+                    <option value="On Hold">On Hold</option>
+                  </select>
                 </div>
               </div>
 

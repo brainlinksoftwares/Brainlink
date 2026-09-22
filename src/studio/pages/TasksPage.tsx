@@ -2,20 +2,15 @@ import React, { useState, useEffect } from 'react';
 import {
   CheckSquare2,
   Plus,
-  Clock,
   Calendar,
-  User as UserIcon,
   Trash2,
-  CheckCircle2,
-  AlertCircle,
-  Filter,
 } from 'lucide-react';
 import { taskService } from '../services/taskService';
 import { leadService } from '../services/leadService';
 import { teamService } from '../services/teamService';
 import { Task, TaskStatus, TaskPriority, Lead, User } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { TaskStatusBadge, PriorityBadge } from '../components/common/StatusBadge';
+import { PriorityBadge } from '../components/common/StatusBadge';
 import { EmptyState } from '../components/common/EmptyState';
 
 export const TasksPage: React.FC = () => {
@@ -23,7 +18,6 @@ export const TasksPage: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
@@ -37,7 +31,6 @@ export const TasksPage: React.FC = () => {
   const [dueDate, setDueDate] = useState('');
 
   const loadData = async () => {
-    setLoading(true);
     try {
       const [t, l, u] = await Promise.all([
         taskService.getAllTasks(),
@@ -47,8 +40,8 @@ export const TasksPage: React.FC = () => {
       setTasks(t);
       setLeads(l);
       setUsers(u);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error(err);
     }
   };
 

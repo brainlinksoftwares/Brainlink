@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  UserCog,
   Plus,
-  Shield,
-  UserCheck,
-  UserX,
-  Mail,
-  Users,
-  CheckCircle,
 } from 'lucide-react';
 import { teamService } from '../services/teamService';
 import { leadService } from '../services/leadService';
 import { User, UserRole, Lead } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { EmptyState } from '../components/common/EmptyState';
 
 export const TeamPage: React.FC = () => {
   const { user } = useAuth();

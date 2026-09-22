@@ -3,28 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus,
   Search,
-  Filter,
   Download,
   Upload,
   ArrowUpDown,
   KanbanSquare,
-  Table as TableIcon,
   ChevronLeft,
   ChevronRight,
   Eye,
   Trash2,
-  Phone,
-  Mail,
-  MoreVertical,
-  Building,
-  UserCheck,
   Calendar,
   X,
 } from 'lucide-react';
 import { leadService, LeadFilterOptions } from '../services/leadService';
 import { teamService } from '../services/teamService';
 import { csvService } from '../services/csvService';
-import { Lead, LeadStatus, LeadPriority, User } from '../types';
+import { Lead, User } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { StatusBadge, PriorityBadge } from '../components/common/StatusBadge';
 import { EmptyState } from '../components/common/EmptyState';
@@ -32,11 +25,10 @@ import { DEFAULT_LEAD_STATUSES, DEFAULT_LEAD_SOURCES } from '../config/crmConfig
 
 export const LeadsList: React.FC = () => {
   const navigate = useNavigate();
-  const { user, role, checkPermission } = useAuth();
+  const { user, role } = useAuth();
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
 
   // Filters state
   const [search, setSearch] = useState('');
@@ -55,8 +47,8 @@ export const LeadsList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Column visibility state
-  const [visibleColumns, setVisibleColumns] = useState({
+  // Column visibility
+  const visibleColumns = {
     company: true,
     email: true,
     phone: true,
@@ -66,11 +58,9 @@ export const LeadsList: React.FC = () => {
     priority: true,
     assignedTo: true,
     createdAt: true,
-  });
-  const [showColumnToggle, setShowColumnToggle] = useState(false);
+  };
 
   const loadData = async () => {
-    setLoading(true);
     try {
       const [leadData, userData] = await Promise.all([
         leadService.getAllLeads(),
@@ -80,8 +70,6 @@ export const LeadsList: React.FC = () => {
       setUsers(userData);
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 

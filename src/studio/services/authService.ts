@@ -9,7 +9,6 @@ import {
 import { auth, googleProvider, isFirebaseConfigured } from '../config/firebase';
 import { User, UserRole } from '../types';
 import { teamService } from './teamService';
-import { storageEngine } from './storageEngine';
 
 const AUTH_USER_KEY = 'current_auth_user';
 

@@ -1,4 +1,4 @@
-import { Lead, LeadStatus, LeadPriority, FollowUpType } from '../types';
+import { Lead, LeadStatus } from '../types';
 import { storageEngine } from './storageEngine';
 import { activityService } from './activityService';
 

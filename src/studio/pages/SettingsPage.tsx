@@ -1,23 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Settings as SettingsIcon,
-  User,
-  Shield,
-  Layers,
-  Share2,
   Plus,
-  Trash2,
   CheckCircle2,
   ExternalLink,
-  MessageSquare,
-  Mail,
-  Calendar,
-  Globe,
-  Code,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { settingsService, IntegrationStatus } from '../services/settingsService';
-import { DEFAULT_LEAD_STATUSES, DEFAULT_LEAD_PRIORITIES } from '../config/crmConfig';
+import { DEFAULT_LEAD_STATUSES } from '../config/crmConfig';
 
 export const SettingsPage: React.FC = () => {
   const { user, role } = useAuth();
