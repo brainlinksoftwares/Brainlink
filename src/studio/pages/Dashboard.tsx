@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
   Sparkles,
   FolderOpen,
+  Compass,
 } from 'lucide-react';
 import { leadService } from '../services/leadService';
 import { followUpService } from '../services/followUpService';
@@ -97,6 +98,13 @@ export const Dashboard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => navigate('/lead-hunter')}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-xs transition-all"
+          >
+            <Compass className="w-4 h-4" />
+            Auto Lead Hunter
+          </button>
           <button
             onClick={() => navigate('/leads/new')}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-xs transition-colors"

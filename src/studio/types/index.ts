@@ -181,3 +181,34 @@ export interface DuplicateCheckResult {
   matchingLeads: Lead[];
   reasons: string[];
 }
+
+export type OpportunityScore = 'Hot' | 'Warm' | 'Moderate';
+
+export interface ExtractedLead {
+  id: string;
+  name: string;
+  category: string;
+  city: string;
+  address: string;
+  phone: string;
+  whatsappAvailable: boolean;
+  hasWebsite: boolean;
+  websiteUrl?: string;
+  hasMobileApp: boolean;
+  rating: number;
+  reviewCount: number;
+  googleMapsUrl?: string;
+  opportunityScore: OpportunityScore;
+  opportunityReason: string;
+  recommendedServices: string[];
+  alreadyInCrm?: boolean;
+}
+
+export interface LeadHunterSearchFilters {
+  query: string;
+  location: string;
+  onlyMissingWebsite: boolean;
+  onlyMissingApp: boolean;
+  minRating: number;
+}
+

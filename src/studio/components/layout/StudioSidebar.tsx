@@ -14,6 +14,7 @@ import {
   X,
   Sparkles,
   ExternalLink,
+  Compass,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -35,6 +36,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   const navItems = [
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { name: 'Leads', to: '/leads', icon: Users2 },
+    { name: 'Lead Hunter', to: '/lead-hunter', icon: Compass, badge: 'Auto' },
     { name: 'Pipeline', to: '/pipeline', icon: KanbanSquare },
     { name: 'Follow-ups', to: '/follow-ups', icon: CalendarClock },
     { name: 'Tasks', to: '/tasks', icon: CheckSquare2 },
@@ -108,7 +110,16 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 } ${isCollapsed ? 'justify-center' : ''}`}
               >
                 <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                {!isCollapsed && <span>{item.name}</span>}
+                {!isCollapsed && (
+                  <div className="flex-1 flex items-center justify-between">
+                    <span>{item.name}</span>
+                    {item.badge && (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                )}
               </NavLink>
             );
           })}

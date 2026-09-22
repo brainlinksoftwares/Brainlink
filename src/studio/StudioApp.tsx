@@ -5,6 +5,8 @@ import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { StudioLayout } from './components/layout/StudioLayout';
 
+import { useAuth } from './context/AuthContext';
+
 // Pages
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -12,6 +14,7 @@ import { LeadsList } from './pages/LeadsList';
 import { LeadCreate } from './pages/LeadCreate';
 import { LeadDetail } from './pages/LeadDetail';
 import { LeadImport } from './pages/LeadImport';
+import { LeadHunterPage } from './pages/LeadHunterPage';
 import { PipelinePage } from './pages/PipelinePage';
 import { FollowUpsPage } from './pages/FollowUpsPage';
 import { TasksPage } from './pages/TasksPage';
@@ -22,12 +25,28 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PublicApply } from './pages/PublicApply';
 
+const StudioHome: React.FC = () => {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <PublicApply />;
+};
+
 export const StudioApp: React.FC = () => {
   return (
     <AuthProvider>
       <NotificationProvider>
         <Routes>
-          {/* Public Routes */}
+          {/* Public & Root Lead Generation Routes */}
+          <Route path="/" element={<StudioHome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/apply" element={<PublicApply />} />
 
@@ -39,12 +58,12 @@ export const StudioApp: React.FC = () => {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/leads" element={<LeadsList />} />
             <Route path="/leads/new" element={<LeadCreate />} />
             <Route path="/leads/import" element={<LeadImport />} />
             <Route path="/leads/:id" element={<LeadDetail />} />
+            <Route path="/lead-hunter" element={<LeadHunterPage />} />
             <Route path="/pipeline" element={<PipelinePage />} />
             <Route path="/follow-ups" element={<FollowUpsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
@@ -63,7 +82,7 @@ export const StudioApp: React.FC = () => {
           </Route>
 
           {/* Studio Fallback */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </NotificationProvider>
     </AuthProvider>
