@@ -4,16 +4,10 @@ import {
   ArrowLeft,
   Save,
   Loader2,
-  AlertCircle,
   Building,
   User as UserIcon,
-  Phone,
-  Mail,
-  Globe,
   Briefcase,
   Clock,
-  Calendar,
-  Sparkles,
 } from 'lucide-react';
 import { leadService } from '../services/leadService';
 import { teamService } from '../services/teamService';

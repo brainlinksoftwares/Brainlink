@@ -2,23 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  Building,
   Mail,
   Phone,
   Globe,
   MapPin,
-  Calendar,
   Clock,
   Send,
   Trophy,
-  CheckCircle2,
   AlertCircle,
   Plus,
-  Trash2,
-  Edit3,
-  ExternalLink,
   MessageSquare,
-  Sparkles,
 } from 'lucide-react';
 import { leadService } from '../services/leadService';
 import { teamService } from '../services/teamService';
@@ -33,7 +26,7 @@ import { DEFAULT_LEAD_STATUSES, FOLLOW_UP_TYPES } from '../config/crmConfig';
 export const LeadDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, role, checkPermission } = useAuth();
+  const { user } = useAuth();
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -85,6 +78,7 @@ export const LeadDetail: React.FC = () => {
       unsubLead();
       unsubAct();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (loading) {

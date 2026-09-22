@@ -6,7 +6,6 @@ import {
   Bell,
   LogOut,
   ChevronDown,
-  User as UserIcon,
   Shield,
   CheckCheck,
   Check,

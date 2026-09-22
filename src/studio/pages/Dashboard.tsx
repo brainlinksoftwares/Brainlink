@@ -11,10 +11,8 @@ import {
   IndianRupee,
   Plus,
   Upload,
-  ExternalLink,
   ArrowUpRight,
   Sparkles,
-  RefreshCw,
   FolderOpen,
 } from 'lucide-react';
 import { leadService } from '../services/leadService';
@@ -25,7 +23,6 @@ import { seedService } from '../services/seedService';
 import { activityService } from '../services/activityService';
 import { Activity } from '../types';
 import { EmptyState } from '../components/common/EmptyState';
-import { StatusBadge } from '../components/common/StatusBadge';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();

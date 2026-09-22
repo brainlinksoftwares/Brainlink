@@ -30,7 +30,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   isCollapsed,
 }) => {
   const location = useLocation();
-  const { role, checkPermission } = useAuth();
+  const { role } = useAuth();
 
   const navItems = [
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },

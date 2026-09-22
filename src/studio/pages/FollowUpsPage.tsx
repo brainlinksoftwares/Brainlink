@@ -6,10 +6,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Calendar,
-  Phone,
-  MessageSquare,
-  Mail,
-  Video,
   Plus,
   Trash2,
   RefreshCw,
@@ -189,7 +185,11 @@ export const FollowUpsPage: React.FC = () => {
       </div>
 
       {/* Follow-up Cards */}
-      {currentList.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : currentList.length === 0 ? (
         <EmptyState
           icon={CalendarClock}
           title={`No ${activeTab} follow-ups`}

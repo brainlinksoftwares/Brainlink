@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  BarChart3,
-  TrendingUp,
-  PieChart,
-  Users2,
-  Trophy,
-  Filter,
-  Download,
-} from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { leadService } from '../services/leadService';
 import { followUpService } from '../services/followUpService';
 import { teamService } from '../services/teamService';

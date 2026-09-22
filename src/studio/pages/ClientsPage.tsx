@@ -5,12 +5,8 @@ import {
   Mail,
   Phone,
   Globe,
-  Calendar,
   Briefcase,
-  IndianRupee,
-  Plus,
   ExternalLink,
-  Users,
 } from 'lucide-react';
 import { clientService } from '../services/clientService';
 import { projectService } from '../services/projectService';
