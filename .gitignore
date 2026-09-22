@@ -27,3 +27,6 @@ yarn-error.log*
 .env.example
 db/migrations/001_create_certificates.sql
 README.md
+
+.vercel
+.env*
