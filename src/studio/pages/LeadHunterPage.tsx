@@ -293,20 +293,34 @@ export const LeadHunterPage: React.FC = () => {
         </div>
 
         {/* Quick city suggestions */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-          <span>Popular:</span>
-          {POPULAR_CITIES.map((c) => (
-            <button
-              key={c}
-              onClick={() => {
-                setLocation(c);
-                handleSearch(query, c);
-              }}
-              className="text-blue-600 hover:underline px-1"
-            >
-              {c}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 pt-1 border-t border-slate-100">
+          <div className="flex items-center gap-1.5">
+            <span>Popular Cities:</span>
+            {POPULAR_CITIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => {
+                  setLocation(c);
+                  handleSearch(query, c);
+                }}
+                className="text-blue-600 font-medium hover:underline px-1"
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${query} in ${location}`)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors"
+          >
+            <MapPin className="w-3.5 h-3.5 text-blue-600" />
+            <span>Open "{query} in {location}" Live on Google Maps</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
       </div>
 
