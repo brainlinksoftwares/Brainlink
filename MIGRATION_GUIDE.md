@@ -1,7 +1,7 @@
 # Complete Zero-Downtime Migration Guide
 ## From: `vishnoiaaditya29@gmail.com` ➔ To: `dev.brainlink@gmail.com`
-**Projects**: Brainlink Main Website (`brainlink.in`) & Brainlink Studio CRM (`studio.brainlink.in`)  
-**Database**: Neon PostgreSQL (`posts`, `certificates`) & Firebase (`brainlinksoftwares`)
+**Projects**: Brainlink Main Website (`brainlink.in`)  
+**Database**: Neon PostgreSQL (`posts`, `certificates`)
 
 ---
 
@@ -44,26 +44,7 @@ If you prefer to keep the existing database instance without changing connection
 
 ---
 
-## 🔥 Step 2: Transfer Firebase Ownership (CRM & Auth)
-
-The CRM system connects to the Firebase project `brainlinksoftwares`.
-To transfer control to `dev.brainlink@gmail.com`:
-1. Log into [Firebase Console](https://console.firebase.google.com/) with `vishnoiaaditya29@gmail.com`.
-2. Select the project **`brainlinksoftwares`**.
-3. Click the gear icon ⚙️ (top-left) ➔ **Project Settings** ➔ **Users and permissions**.
-4. Click **Add member**:
-   - Email: `dev.brainlink@gmail.com`
-   - Role: **Owner**
-5. Check your inbox at `dev.brainlink@gmail.com` and accept the invitation.
-6. (Optional) Once verified, you can remove `vishnoiaaditya29@gmail.com` or keep it as backup admin.
-7. Under **Authentication** ➔ **Settings** ➔ **Authorized domains**, make sure both domains are listed:
-   - `brainlink.in`
-   - `studio.brainlink.in`
-   - `localhost`
-
----
-
-## 🚀 Step 3: Migrate Vercel Project & Domains
+## 🚀 Step 2: Migrate Vercel Project & Domains
 
 ### Method 1: Seamless Vercel Project Transfer (Zero Downtime — Recommended)
 This is the cleanest method because it moves the project, history, environment variables, and domains in 1 click:
@@ -92,44 +73,35 @@ If you are setting up a fresh project under `dev.brainlink@gmail.com`:
 5. Add the **Environment Variables**:
    ```ini
    DATABASE_URL=postgresql://neondb_owner:YOUR_NEW_PASSWORD@ep-xyz-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require
-   REACT_APP_FIREBASE_API_KEY=AIzaSyA42rWcSnG2mUokdGOKTRVz0O5K62DSaAQ
-   REACT_APP_FIREBASE_AUTH_DOMAIN=brainlinksoftwares.firebaseapp.com
-   REACT_APP_FIREBASE_PROJECT_ID=brainlinksoftwares
-   REACT_APP_FIREBASE_STORAGE_BUCKET=brainlinksoftwares.firebasestorage.app
-   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=595517739090
-   REACT_APP_FIREBASE_APP_ID=1:595517739090:web:4579d915f2c5dfcf950f8b
-   REACT_APP_FIREBASE_MEASUREMENT_ID=G-BS6RR7WKZS
    ```
 6. Click **Deploy**.
 
 ---
 
-## 🌐 Step 4: Domain & DNS Routing
+## 🌐 Step 3: Domain & DNS Routing
 
-Under the new Vercel project in `dev.brainlink@gmail.com`:
+Under the Vercel project:
 1. Go to **Settings** ➔ **Domains**.
-2. Add:
-   - `brainlink.in` (and `www.brainlink.in` with redirect to `brainlink.in`)
-   - `studio.brainlink.in`
-3. If your DNS is managed on Cloudflare, GoDaddy, Hostinger, or Namecheap:
+2. Ensure domains are configured:
+   - `brainlink.in`
+   - `www.brainlink.in` (with 308 redirect to `brainlink.in`)
+3. DNS Records:
    - **Root apex (`brainlink.in`)**:
      - Type: `A`
      - Name: `@`
      - Value: `76.76.21.21`
-   - **Subdomain (`studio.brainlink.in`)**:
+   - **Subdomain (`www.brainlink.in`)**:
      - Type: `CNAME`
-     - Name: `studio`
+     - Name: `www`
      - Value: `cname.vercel-dns.com`
 4. Once DNS records propagate, Vercel will automatically provision free SSL certificates.
 
 ---
 
-## ✅ Step 5: Verification Checklist
+## ✅ Step 4: Verification Checklist
 
 Once migrated, test these exact endpoints to ensure 100% functionality:
 
 - [ ] **Homepage**: `https://brainlink.in` loads properly.
 - [ ] **Blog Posts (Database test)**: Visit `https://brainlink.in/blog` and click on any blog post (e.g. `/blog/why-brainlink-is-best`). Ensure content renders from PostgreSQL.
 - [ ] **Certificates Lookup (Database test)**: Check student certificate verification at `https://brainlink.in/verify-certificate` with code `BL-2025-001`.
-- [ ] **Lead Generation CRM**: Visit `https://studio.brainlink.in` (or `https://brainlink-studio.vercel.app`), log in, and check leads, pipeline, and follow-ups.
-- [ ] **Public Lead Capture**: Submit a test lead at `https://studio.brainlink.in/apply` and verify it appears in the CRM dashboard.
