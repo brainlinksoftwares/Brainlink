@@ -20,8 +20,6 @@ export default function Founder() {
         description={founder.summary}
         path={founder.path}
         type="profile"
-        image={founder.portrait.src}
-        imageAlt={founder.portrait.alt}
         profile={{ firstName: founder.firstName, lastName: founder.name.split(" ").slice(1).join(" ") }}
         jsonLd={[
           profilePageSchema({ path: founder.path, name: PAGE_TITLE, description: founder.summary }),

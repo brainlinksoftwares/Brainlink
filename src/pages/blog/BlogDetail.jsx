@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Share2 } from "lucide-react";
 import { LinkedInIcon, XIcon, WhatsAppIcon } from "../../components/icons/BrandIcons";
 import Layout from "../../common/Layout";
 import SEO, { articleSchema, breadcrumbSchema, SITE_URL } from "../../components/SEO";
+import pageMeta from "../../data/pageMeta.json";
 import LoadingState from "../../components/LoadingState";
 import BlogCard from "../../components/blog/BlogCard";
 
@@ -79,7 +80,8 @@ export default function BlogDetail() {
           title={post.meta_title || post.title}
           description={post.meta_description || post.excerpt || `Read ${post.title} on the Brainlink Softwares blog.`}
           path={`/blog/${slug}`}
-          image={post.featured_image}
+          image={post.featured_image || pageMeta["/blog"].image}
+          imageAlt={post.title}
           type="article"
           jsonLd={[
             articleSchema({

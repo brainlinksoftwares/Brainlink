@@ -1,9 +1,14 @@
 import { Helmet } from "react-helmet-async";
 import { founder } from "../data/founder";
+import pageMeta from "../data/pageMeta.json";
 
 const SITE_URL = "https://www.brainlink.in";
 const SITE_NAME = "Brainlink Softwares";
+// Brand logo for structured data; link previews use the 1200x630 cards in /public/og.
 const DEFAULT_IMAGE = `${SITE_URL}/logo.png`;
+const DEFAULT_OG_IMAGE = pageMeta["/"].image;
+// Size of the generated preview cards (scripts/generate-og-images.js).
+const OG_CARD = { width: 1200, height: 630 };
 
 /**
  * Centralized per-page SEO: title, description, canonical, Open Graph,
@@ -13,8 +18,8 @@ export default function SEO({
   title,
   description,
   path = "/",
-  image = DEFAULT_IMAGE,
-  imageAlt = SITE_NAME,
+  image,
+  imageAlt,
   type = "website",
   profile = null,
   noindex = false,
@@ -22,7 +27,11 @@ export default function SEO({
 }) {
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Custom Software, Web & Mobile App Development`;
   const canonical = `${SITE_URL}${path === "/" ? "" : path}`;
-  const imageUrl = image.startsWith("http") ? image : `${SITE_URL}${image}`;
+  // Pages without an explicit image get their card from pageMeta.json.
+  const ogImage = image || pageMeta[path]?.image || DEFAULT_OG_IMAGE;
+  const ogImageAlt = imageAlt || pageMeta[path]?.imageAlt || fullTitle;
+  const imageUrl = ogImage.startsWith("http") ? ogImage : `${SITE_URL}${ogImage}`;
+  const isCard = ogImage.startsWith("/og/");
   const schemas = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
 
   return (
@@ -39,7 +48,11 @@ export default function SEO({
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical} />
       <meta property="og:image" content={imageUrl} />
-      <meta property="og:image:alt" content={imageAlt} />
+      <meta property="og:image:secure_url" content={imageUrl} />
+      {isCard && <meta property="og:image:type" content="image/jpeg" />}
+      {isCard && <meta property="og:image:width" content={String(OG_CARD.width)} />}
+      {isCard && <meta property="og:image:height" content={String(OG_CARD.height)} />}
+      <meta property="og:image:alt" content={ogImageAlt} />
       <meta property="og:locale" content="en_IN" />
       {profile?.firstName && <meta property="profile:first_name" content={profile.firstName} />}
       {profile?.lastName && <meta property="profile:last_name" content={profile.lastName} />}
@@ -49,7 +62,7 @@ export default function SEO({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={imageUrl} />
-      <meta name="twitter:image:alt" content={imageAlt} />
+      <meta name="twitter:image:alt" content={ogImageAlt} />
       <meta name="twitter:site" content="@BrainlinkIndia" />
 
       {schemas.map((schema, i) => (
