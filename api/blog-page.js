@@ -10,6 +10,22 @@ import pageMeta from "../src/data/pageMeta.json";
  */
 let templateCache = null;
 
+// Raw Unsplash URLs return multi-MB originals, which WhatsApp won't preview;
+// ask Unsplash for a 1200x630 JPEG crop instead.
+function previewImage(url) {
+  if (!url) return pageMeta["/blog"].image;
+  try {
+    const u = new URL(url);
+    if (u.hostname === "images.unsplash.com" && !u.search) {
+      u.search = "?w=1200&h=630&fit=crop&q=80&fm=jpg";
+      return u.toString();
+    }
+  } catch {
+    // Relative path — headTags prefixes the site URL.
+  }
+  return url;
+}
+
 async function loadTemplate(req) {
   if (templateCache) return templateCache;
   const proto = req.headers["x-forwarded-proto"] || "https";
@@ -57,7 +73,7 @@ export default async function handler(req, res) {
       {
         title: post.meta_title || post.title,
         description: post.meta_description || post.excerpt || `Read ${post.title} on the Brainlink Softwares blog.`,
-        image: post.featured_image || pageMeta["/blog"].image,
+        image: previewImage(post.featured_image),
         imageAlt: post.title,
         type: "article",
       },
