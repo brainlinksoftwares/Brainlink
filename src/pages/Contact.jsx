@@ -6,6 +6,9 @@ import PageHero from "../components/PageHero";
 import { WhatsAppIcon } from "../components/icons/BrandIcons";
 import { submitWeb3Form } from "../utils/web3forms";
 import { siteConfig } from "../data/siteConfig";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/contact"];
 
 const services = [
   "Custom Software Development", "Website / Web Application", "Mobile App Development",
@@ -71,8 +74,8 @@ export default function Contact() {
   return (
     <Layout>
       <SEO
-        title="Contact Us"
-        description="Get in touch with Brainlink Softwares to discuss your software, web or mobile app project. We respond within 24 hours."
+        title={meta.title}
+        description={meta.description}
         path="/contact"
         jsonLd={[organizationSchema, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Contact", path: "/contact" }])]}
       />

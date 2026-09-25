@@ -4,6 +4,10 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Build-time head tags (scripts/prerender-meta.js) exist for crawlers that
+// don't run JS; drop them so react-helmet-async owns the head from here on.
+document.querySelectorAll("[data-prerender]").forEach((el) => el.remove());
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

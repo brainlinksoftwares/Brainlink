@@ -6,6 +6,9 @@ import PageHero from "../../components/PageHero";
 import BlogCard from "../../components/blog/BlogCard";
 import LoadingState from "../../components/LoadingState";
 import ErrorState from "../../components/ErrorState";
+import pageMeta from "../../data/pageMeta.json";
+
+const meta = pageMeta["/blog"];
 
 export default function BlogList() {
   const [posts, setPosts] = useState([]);
@@ -29,8 +32,8 @@ export default function BlogList() {
   return (
     <Layout>
       <SEO
-        title="Insights & Blog"
-        description="Insights on software development, web engineering, mobile development and startup technology from Brainlink Softwares."
+        title={meta.title}
+        description={meta.description}
         path="/blog"
         jsonLd={[organizationSchema, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Insights", path: "/blog" }])]}
       />

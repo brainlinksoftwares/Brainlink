@@ -8,13 +8,16 @@ import Reveal, { StaggerGroup, StaggerItem } from "../components/Reveal";
 import { coreValues } from "../data/values";
 import { siteConfig } from "../data/siteConfig";
 import FounderSpotlight from "../components/FounderSpotlight";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/about"];
 
 export default function About() {
   return (
     <Layout>
       <SEO
-        title="About Us"
-        description="Brainlink Softwares is an MSME-registered software engineering studio in Uttar Pradesh, building scalable digital products through direct, transparent collaboration."
+        title={meta.title}
+        description={meta.description}
         path="/about"
         jsonLd={[organizationSchema, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "About", path: "/about" }])]}
       />

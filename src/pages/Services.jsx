@@ -8,6 +8,9 @@ import FAQAccordion from "../components/FAQAccordion";
 import Reveal from "../components/Reveal";
 import { services } from "../data/services";
 import { servicesFaqs } from "../data/faqs";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/services"];
 
 const engagementModels = [
   { title: "Project-Based Development", desc: "A defined scope, timeline and deliverable — best for a single product build with a clear end point." },
@@ -20,8 +23,8 @@ export default function Services() {
   return (
     <Layout>
       <SEO
-        title="Software Development Services"
-        description="Custom software, web and mobile app development, SaaS platforms, backend engineering, UI/UX design, cloud deployment and technical consulting from Brainlink Softwares."
+        title={meta.title}
+        description={meta.description}
         path="/services"
         jsonLd={[organizationSchema, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Services", path: "/services" }])]}
       />

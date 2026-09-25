@@ -1,4 +1,5 @@
 import { Code2, Users, MessageSquare, GraduationCap } from "lucide-react";
+import pageMeta from "./pageMeta.json";
 
 /**
  * Founder profile — single source for the /founder page, the founder
@@ -31,8 +32,8 @@ export const founder = {
     { src: `${IMG}/aaditya-vishnoi-4.jpeg`, width: 1600, height: 1066, alt: "Aaditya Vishnoi smiling in an office hallway" },
   ],
   headline: "Building software the honest way — directly with the people who use it.",
-  summary:
-    "Aaditya Vishnoi is the founder and lead engineer of Brainlink Softwares, an MSME-registered software studio in Kanth, Moradabad, helping businesses and founders build scalable web, mobile and SaaS products.",
+  // Page title/description live in pageMeta.json (shared with the build-time prerender).
+  summary: pageMeta["/founder"].description,
   quote:
     "I started Brainlink because I wanted clients to talk directly to the people building their product — no middle layers, no inflated promises, just honest engineering.",
   bio: [

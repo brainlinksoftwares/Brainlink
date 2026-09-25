@@ -9,6 +9,9 @@ import Reveal, { StaggerGroup, StaggerItem } from "../components/Reveal";
 import { internshipHighlights, whoShouldApply, skillsValued, selectionProcess, careerFaqs } from "../data/careers";
 import { submitWeb3Form } from "../utils/web3forms";
 import { siteConfig } from "../data/siteConfig";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/careers"];
 
 const initialForm = {
   name: "", email: "", phone: "", college: "", course: "", year: "",
@@ -71,8 +74,8 @@ export default function Careers() {
   return (
     <Layout>
       <SEO
-        title="Careers & Internships"
-        description="Internship and career opportunities at Brainlink Softwares — practical, mentored experience building real software, subject to current availability."
+        title={meta.title}
+        description={meta.description}
         path="/careers"
         jsonLd={[organizationSchema, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Careers", path: "/careers" }])]}
       />

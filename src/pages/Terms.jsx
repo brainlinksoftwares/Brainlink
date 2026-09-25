@@ -2,6 +2,9 @@ import Layout from "../common/Layout";
 import SEO, { breadcrumbSchema } from "../components/SEO";
 import PageHero from "../components/PageHero";
 import { siteConfig } from "../data/siteConfig";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/terms"];
 
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: 36 }}>
@@ -14,13 +17,13 @@ export default function Terms() {
   return (
     <Layout>
       <SEO
-        title="Terms & Conditions"
-        description="Terms and conditions for engaging Brainlink Softwares for software, web and mobile development services."
+        title={meta.title}
+        description={meta.description}
         path="/terms"
         jsonLd={breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Terms & Conditions", path: "/terms" }])}
       />
 
-      <PageHero label="Legal" title="Terms & Conditions" subtitle="Last updated: February 2026" maxWidth={760} />
+      <PageHero label="Legal" title={meta.title} subtitle="Last updated: February 2026" maxWidth={760} />
 
       <section className="section">
         <div className="container" style={{ maxWidth: 760 }}>

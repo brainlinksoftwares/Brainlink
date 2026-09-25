@@ -2,6 +2,9 @@ import Layout from "../common/Layout";
 import SEO, { breadcrumbSchema } from "../components/SEO";
 import PageHero from "../components/PageHero";
 import { siteConfig } from "../data/siteConfig";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/privacy-policy"];
 
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: 36 }}>
@@ -14,13 +17,13 @@ export default function Privacy() {
   return (
     <Layout>
       <SEO
-        title="Privacy Policy"
-        description="How Brainlink Softwares collects, uses and protects information submitted through this website."
+        title={meta.title}
+        description={meta.description}
         path="/privacy-policy"
         jsonLd={breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Privacy Policy", path: "/privacy-policy" }])}
       />
 
-      <PageHero label="Legal" title="Privacy Policy" subtitle="Last updated: February 2026" maxWidth={760} />
+      <PageHero label="Legal" title={meta.title} subtitle="Last updated: February 2026" maxWidth={760} />
 
       <section className="section">
         <div className="container" style={{ maxWidth: 760 }}>

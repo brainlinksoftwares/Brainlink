@@ -19,6 +19,9 @@ import { featuredProjects } from "../data/portfolio";
 import { whyBrainlink } from "../data/values";
 import { internshipHighlights } from "../data/careers";
 import { siteConfig } from "../data/siteConfig";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/"];
 
 export default function Index() {
   const omPictures = featuredProjects.find((p) => p.id === "om-pictures");
@@ -26,8 +29,8 @@ export default function Index() {
   return (
     <Layout>
       <SEO
-        title="Custom Software, Web & Mobile App Development"
-        description="Brainlink Softwares builds scalable software, modern web applications, mobile apps and digital products for startups and growing businesses."
+        title={meta.title}
+        description={meta.description}
         path="/"
         jsonLd={organizationSchema}
       />

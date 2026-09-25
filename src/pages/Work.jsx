@@ -6,6 +6,9 @@ import PageHero from "../components/PageHero";
 import ProjectCard from "../components/ProjectCard";
 import Reveal from "../components/Reveal";
 import { verifiedProjects, portfolioCategories } from "../data/portfolio";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/work"];
 
 export default function Work() {
   const [active, setActive] = useState("All Projects");
@@ -14,8 +17,8 @@ export default function Work() {
   return (
     <Layout>
       <SEO
-        title="Our Work — Case Studies"
-        description="Verified client engagements from Brainlink Softwares: Om Pictures and Shubham Rathi's constituency platform, with problem, approach and outcome for each project."
+        title={meta.title}
+        description={meta.description}
         path="/work"
         jsonLd={[organizationSchema, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Work", path: "/work" }])]}
       />

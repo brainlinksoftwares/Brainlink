@@ -6,6 +6,9 @@ import SEO, { organizationSchema, breadcrumbSchema } from "../components/SEO";
 import PageHero from "../components/PageHero";
 import Reveal from "../components/Reveal";
 import { normalizeCertificateInput, validateCertificateSlug, CERTIFICATE_FORMAT_EXAMPLE } from "../utils/certificateFormat";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/verify-certificate"];
 
 export default function VerifyCertificate() {
   const [value, setValue] = useState("");
@@ -37,8 +40,8 @@ export default function VerifyCertificate() {
   return (
     <Layout>
       <SEO
-        title="Verify Certificate"
-        description="Verify certificates and internship credentials issued by Brainlink Softwares using the official Certificate ID."
+        title={meta.title}
+        description={meta.description}
         path="/verify-certificate"
         jsonLd={[organizationSchema, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Verify Certificate", path: "/verify-certificate" }])]}
       />

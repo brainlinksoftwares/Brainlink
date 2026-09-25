@@ -8,13 +8,16 @@ import FAQAccordion from "../components/FAQAccordion";
 import Reveal from "../components/Reveal";
 import { engagementModels } from "../data/engagementModels";
 import { pricingFaqs } from "../data/faqs";
+import pageMeta from "../data/pageMeta.json";
+
+const meta = pageMeta["/pricing"];
 
 export default function Pricing() {
   return (
     <Layout>
       <SEO
-        title="Pricing & Engagement Models"
-        description="Transparent engagement models for software development — starter websites, custom product development, dedicated development support, and enterprise solutions."
+        title={meta.title}
+        description={meta.description}
         path="/pricing"
         jsonLd={[organizationSchema, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }])]}
       />

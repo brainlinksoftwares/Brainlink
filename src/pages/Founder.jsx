@@ -8,8 +8,9 @@ import Reveal, { StaggerGroup, StaggerItem } from "../components/Reveal";
 import { WhatsAppIcon } from "../components/icons/BrandIcons";
 import { founder } from "../data/founder";
 import { siteConfig } from "../data/siteConfig";
+import pageMeta from "../data/pageMeta.json";
 
-const PAGE_TITLE = `${founder.name} — ${founder.role}`;
+const PAGE_TITLE = pageMeta[founder.path].title;
 
 export default function Founder() {
   return (
