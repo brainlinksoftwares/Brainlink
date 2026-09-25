@@ -12,6 +12,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Services = lazy(() => import("./pages/Services"));
 const Work = lazy(() => import("./pages/Work"));
 const About = lazy(() => import("./pages/About"));
+const Founder = lazy(() => import("./pages/Founder"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Careers = lazy(() => import("./pages/Careers"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -39,6 +40,8 @@ function AnimatedRoutes() {
             <Route path="/services" element={<Services />} />
             <Route path="/work" element={<Work />} />
             <Route path="/about" element={<About />} />
+            <Route path="/founder" element={<Founder />} />
+            <Route path="/aaditya-vishnoi" element={<Navigate to="/founder" replace />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/careers" element={<Careers />} />
             <Route path="/contact" element={<Contact />} />

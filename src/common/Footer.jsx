@@ -11,6 +11,7 @@ const quickLinks = [
   { l: "Services", h: "/services" },
   { l: "Work", h: "/work" },
   { l: "About", h: "/about" },
+  { l: "Founder", h: "/founder" },
   { l: "Pricing", h: "/pricing" },
   { l: "Careers", h: "/careers" },
   { l: "Insights", h: "/blog" },

@@ -9,6 +9,7 @@ import ServiceCard from "../components/ServiceCard";
 import ProjectCard from "../components/ProjectCard";
 import ProcessSteps from "../components/ProcessSteps";
 import TechStack from "../components/TechStack";
+import FounderSpotlight from "../components/FounderSpotlight";
 import Reveal, { StaggerGroup, StaggerItem } from "../components/Reveal";
 import { WhatsAppIcon } from "../components/icons/BrandIcons";
 import { homeServices } from "../data/services";
@@ -161,6 +162,9 @@ export default function Index() {
               </StaggerItem>
             ))}
           </StaggerGroup>
+          <div style={{ marginTop: 88 }}>
+            <FounderSpotlight label="Led by the Founder" />
+          </div>
         </div>
       </section>
 

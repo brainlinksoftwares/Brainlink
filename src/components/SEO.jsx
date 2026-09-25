@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { founder } from "../data/founder";
 
 const SITE_URL = "https://www.brainlink.in";
 const SITE_NAME = "Brainlink Softwares";
@@ -13,12 +14,15 @@ export default function SEO({
   description,
   path = "/",
   image = DEFAULT_IMAGE,
+  imageAlt = SITE_NAME,
   type = "website",
+  profile = null,
   noindex = false,
   jsonLd = null,
 }) {
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Custom Software, Web & Mobile App Development`;
   const canonical = `${SITE_URL}${path === "/" ? "" : path}`;
+  const imageUrl = image.startsWith("http") ? image : `${SITE_URL}${image}`;
   const schemas = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
 
   return (
@@ -34,14 +38,18 @@ export default function SEO({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical} />
-      <meta property="og:image" content={image} />
+      <meta property="og:image" content={imageUrl} />
+      <meta property="og:image:alt" content={imageAlt} />
       <meta property="og:locale" content="en_IN" />
+      {profile?.firstName && <meta property="profile:first_name" content={profile.firstName} />}
+      {profile?.lastName && <meta property="profile:last_name" content={profile.lastName} />}
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
+      <meta name="twitter:image" content={imageUrl} />
+      <meta name="twitter:image:alt" content={imageAlt} />
       <meta name="twitter:site" content="@BrainlinkIndia" />
 
       {schemas.map((schema, i) => (
@@ -63,6 +71,13 @@ export const organizationSchema = {
   "email": "team.brainlink@gmail.com",
   "telephone": "+91-94123-30177",
   "priceRange": "₹₹",
+  "@id": `${SITE_URL}/#organization`,
+  "founder": {
+    "@type": "Person",
+    "@id": `${SITE_URL}${founder.path}#person`,
+    "name": founder.name,
+    "url": `${SITE_URL}${founder.path}`,
+  },
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "Meena Market Road, Kanth",
@@ -128,6 +143,60 @@ export function articleSchema({ title, description, image, datePublished, dateMo
       "logo": { "@type": "ImageObject", "url": DEFAULT_IMAGE },
     },
     "mainEntityOfPage": `${SITE_URL}${path}`,
+  };
+}
+
+/** Person entity for the founder — referenced from the Organization by @id. */
+export const personSchema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": `${SITE_URL}${founder.path}#person`,
+  "name": founder.name,
+  "givenName": founder.firstName,
+  "familyName": founder.name.split(" ").slice(1).join(" "),
+  "jobTitle": founder.role,
+  "description": founder.summary,
+  "url": `${SITE_URL}${founder.path}`,
+  "image": {
+    "@type": "ImageObject",
+    "url": `${SITE_URL}${founder.portrait.src}`,
+    "width": founder.portrait.width,
+    "height": founder.portrait.height,
+    "caption": founder.portrait.alt,
+  },
+  "worksFor": { "@id": `${SITE_URL}/#organization`, "@type": "Organization", "name": SITE_NAME, "url": SITE_URL },
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Moradabad",
+    "addressRegion": "Uttar Pradesh",
+    "addressCountry": "IN",
+  },
+  "knowsAbout": founder.knowsAbout,
+  ...(founder.sameAs.length ? { "sameAs": founder.sameAs } : {}),
+};
+
+export function profilePageSchema({ path, name, description }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "name": name,
+    "description": description,
+    "url": `${SITE_URL}${path}`,
+    "mainEntity": { "@id": personSchema["@id"] },
+    "primaryImageOfPage": { "@type": "ImageObject", "url": personSchema.image.url },
+    "isPartOf": { "@type": "WebSite", "name": SITE_NAME, "url": SITE_URL },
+  };
+}
+
+export function faqSchema(items) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": items.map((item) => ({
+      "@type": "Question",
+      "name": item.q,
+      "acceptedAnswer": { "@type": "Answer", "text": item.a },
+    })),
   };
 }
 

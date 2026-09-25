@@ -58,6 +58,16 @@ export default async function handler(req, res) {
       </url>
 
       <url>
+        <loc>${baseUrl}/founder</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+        <image:image>
+          <image:loc>${baseUrl}/images/founder/aaditya-vishnoi-founder-brainlink-softwares.jpeg</image:loc>
+          <image:title>Aaditya Vishnoi, Founder of Brainlink Softwares</image:title>
+        </image:image>
+      </url>
+
+      <url>
         <loc>${baseUrl}/pricing</loc>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
