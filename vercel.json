@@ -19,6 +19,10 @@
       "destination": "/api/certificates/[slug].js"
     },
     {
+      "source": "/blog/:slug",
+      "destination": "/api/blog-page?slug=:slug"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
