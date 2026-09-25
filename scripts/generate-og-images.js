@@ -1,9 +1,9 @@
 /**
- * Generates 1200x630 link-preview (Open Graph) images into public/og/ by
+ * Generates 1200x630 link-preview (Open Graph) JPEGs into public/og/ by
  * screenshotting an HTML template with a local Chrome/Edge.
  *
  * Run manually when titles change:  npm run og-images
- * The PNGs are committed, so Vercel builds don't need a browser.
+ * The images are committed, so Vercel builds don't need a browser.
  */
 const fs = require("fs");
 const os = require("os");
@@ -73,7 +73,7 @@ function template(card) {
 </style></head><body>
   <div class="glow"></div><div class="grid"></div>
   <div class="main">
-    <div class="brand"><img src="${logo}" alt="">Brainlink <span>Softwares</span></div>
+    <div class="brand"><img src="${logo}" alt=""><div>Brainlink <span>Softwares</span></div></div>
     <div class="body">
       <div class="label">${esc(card.label)}</div>
       <h1>${esc(card.headline)}</h1>
@@ -98,7 +98,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "og-"));
 for (const [route, card] of Object.entries(CARDS)) {
   const html = path.join(tmp, `${card.slug}.html`);
   fs.writeFileSync(html, template(card));
-  const out = path.join(OUT_DIR, `${card.slug}.png`);
+  const out = path.join(OUT_DIR, `${card.slug}.jpg`);
   execFileSync(browser, [
     "--headless=new",
     "--disable-gpu",
@@ -110,7 +110,7 @@ for (const [route, card] of Object.entries(CARDS)) {
     `--screenshot=${out}`,
     fileUrl(html),
   ], { stdio: "ignore" });
-  console.log(`${route} → public/og/${card.slug}.png`);
+  console.log(`${route} → public/og/${card.slug}.jpg`);
 }
 
 fs.rmSync(tmp, { recursive: true, force: true });
