@@ -6,17 +6,32 @@ import { siteConfig } from "../data/siteConfig";
 import logo from "../assets/logo/logo.png";
 import "../index.css";
 
-const quickLinks = [
-  { l: "Home", h: "/" },
-  { l: "Services", h: "/services" },
-  { l: "Work", h: "/work" },
-  { l: "About", h: "/about" },
-  { l: "Founder", h: "/founder" },
-  { l: "Pricing", h: "/pricing" },
-  { l: "Careers", h: "/careers" },
-  { l: "Insights", h: "/blog" },
-  { l: "Contact", h: "/contact" },
+const linkGroups = [
+  {
+    title: "Explore",
+    links: [
+      { l: "Home", h: "/" },
+      { l: "Services", h: "/services" },
+      { l: "Work", h: "/work" },
+      { l: "Pricing", h: "/pricing" },
+      { l: "Insights", h: "/blog" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { l: "About", h: "/about" },
+      { l: "Founder", h: "/founder" },
+      { l: "Careers", h: "/careers" },
+      { l: "Contact", h: "/contact" },
+    ],
+  },
 ];
+
+const headingStyle = {
+  fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "0.78rem", color: "var(--text)",
+  textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 18,
+};
 
 const legalLinks = [
   { l: "Verify Certificate", h: "/verify-certificate" },
@@ -36,9 +51,9 @@ export default function Footer() {
   return (
     <footer style={{ background: "var(--bg-card2)", borderTop: "1px solid var(--border)" }}>
       <div className="container" style={{ padding: "64px 24px 32px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 48, marginBottom: 48 }} className="footer-cols">
+        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 0.8fr 0.8fr 1.3fr", gap: 40, marginBottom: 48 }} className="footer-cols">
 
-          <div>
+          <div className="footer-brand">
             <Link to="/" style={{ display: "inline-flex", alignItems: "center", gap: 9, textDecoration: "none", marginBottom: 16 }}>
               <img src={logo} alt="" style={{ height: 26, width: 26, objectFit: "contain" }} />
               <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "0.95rem", color: "var(--text)" }}>
@@ -72,30 +87,21 @@ export default function Footer() {
             </div>
           </div>
 
-          <div>
-            <h4 style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "0.78rem", color: "var(--text)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 18 }}>
-              Company
-            </h4>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 11 }}>
-              {quickLinks.map((item) => (
-                <li key={item.l}>
-                  <Link
-                    to={item.h}
-                    style={{ fontSize: "0.875rem", color: "var(--muted)", textDecoration: "none", transition: "color 0.15s" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
-                  >
-                    {item.l}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {linkGroups.map((group) => (
+            <nav key={group.title} aria-label={group.title}>
+              <h4 style={headingStyle}>{group.title}</h4>
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, padding: 0, margin: 0 }}>
+                {group.links.map((item) => (
+                  <li key={item.l}>
+                    <Link to={item.h} className="footer-link">{item.l}</Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
 
-          <div>
-            <h4 style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "0.78rem", color: "var(--text)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 18 }}>
-              Contact
-            </h4>
+          <div className="footer-contact">
+            <h4 style={headingStyle}>Contact</h4>
             <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
               <a
                 href={`mailto:${siteConfig.email}`}
@@ -166,11 +172,19 @@ export default function Footer() {
       </div>
 
       <style>{`
-        @media (max-width: 768px) {
-          .footer-cols { grid-template-columns: 1fr 1fr !important; }
+        .footer-link {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-size: 0.875rem; color: var(--muted); text-decoration: none;
+          transition: color 0.15s ease, transform 0.15s ease;
         }
-        @media (max-width: 480px) {
-          .footer-cols { grid-template-columns: 1fr !important; }
+        .footer-link:hover { color: var(--accent); transform: translateX(3px); }
+        @media (max-width: 1024px) {
+          .footer-cols { grid-template-columns: 1fr 1fr 1fr !important; }
+          .footer-brand { grid-column: 1 / -1; }
+        }
+        @media (max-width: 900px) {
+          .footer-cols { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
+          .footer-contact { grid-column: 1 / -1; }
         }
       `}</style>
     </footer>

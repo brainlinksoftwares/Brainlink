@@ -9,6 +9,7 @@ const navLinks = [
   { label: "Services", to: "/services" },
   { label: "Work", to: "/work" },
   { label: "About", to: "/about" },
+  { label: "Founder", to: "/founder" },
   { label: "Pricing", to: "/pricing" },
   { label: "Careers", to: "/careers" },
   { label: "Insights", to: "/blog" },
@@ -46,16 +47,8 @@ export default function Header() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  const linkStyle = (active) => ({
-    fontFamily: "var(--font-body)",
-    fontWeight: 500,
-    fontSize: "0.88rem",
-    color: active ? "var(--accent)" : "var(--text)",
-    textDecoration: "none",
-    padding: "6px 2px",
-    borderBottom: active ? "2px solid var(--accent)" : "2px solid transparent",
-    transition: "color 0.15s ease",
-  });
+  // Nested routes (e.g. /blog/:slug) keep their parent tab highlighted.
+  const isActive = (to) => (to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`));
 
   return (
     <>
@@ -94,10 +87,14 @@ export default function Header() {
             </span>
           </Link>
 
-          <ul style={{ display: "flex", alignItems: "center", gap: 24, listStyle: "none" }} className="desktop-nav">
+          <ul className="desktop-nav nav-list">
             {navLinks.map((l) => (
               <li key={l.label}>
-                <Link to={l.to} style={linkStyle(pathname === l.to)}>
+                <Link
+                  to={l.to}
+                  className={isActive(l.to) ? "nav-link is-active" : "nav-link"}
+                  aria-current={isActive(l.to) ? "page" : undefined}
+                >
                   {l.label}
                 </Link>
               </li>
@@ -127,24 +124,21 @@ export default function Header() {
           id="mobile-menu"
           className="mobile-nav-btn"
           style={{
-            maxHeight: open ? 480 : 0,
+            maxHeight: open ? 640 : 0,
             overflow: "hidden",
             transition: "max-height 0.2s ease",
             background: "var(--mobile-menu-bg)",
             borderTop: open ? "1px solid var(--border)" : "none",
           }}
         >
-          <div style={{ padding: "8px 24px 20px", display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ padding: "12px 20px 20px", display: "flex", flexDirection: "column", gap: 4 }}>
             {navLinks.map((l) => (
               <Link
                 key={l.label}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                style={{
-                  fontFamily: "var(--font-body)", fontWeight: 500, fontSize: "0.95rem",
-                  color: pathname === l.to ? "var(--accent)" : "var(--text)",
-                  textDecoration: "none", padding: "12px 4px", borderBottom: "1px solid var(--border)",
-                }}
+                className={isActive(l.to) ? "mobile-nav-link is-active" : "mobile-nav-link"}
+                aria-current={isActive(l.to) ? "page" : undefined}
               >
                 {l.label}
               </Link>
@@ -156,7 +150,7 @@ export default function Header() {
         </div>
       </nav>
 
-      <div style={{ height: 65 }} />
+      <div style={{ height: 72 }} />
     </>
   );
 }
