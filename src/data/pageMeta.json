@@ -1,53 +1,64 @@
 {
   "/": {
     "title": "Custom Software, Web & Mobile App Development",
-    "description": "Brainlink Softwares builds scalable software, modern web applications, mobile apps and digital products for startups and growing businesses."
+    "description": "Brainlink Softwares builds scalable software, modern web applications, mobile apps and digital products for startups and growing businesses.",
+    "image": "/og/home.jpg"
   },
   "/services": {
     "title": "Software Development Services",
-    "description": "Custom software, web and mobile app development, SaaS platforms, backend engineering, UI/UX design, cloud deployment and technical consulting from Brainlink Softwares."
+    "description": "Custom software, web and mobile app development, SaaS platforms, backend engineering, UI/UX design, cloud deployment and technical consulting from Brainlink Softwares.",
+    "image": "/og/services.jpg"
   },
   "/work": {
     "title": "Our Work — Case Studies",
-    "description": "Verified client engagements from Brainlink Softwares: Om Pictures and Shubham Rathi's constituency platform, with problem, approach and outcome for each project."
+    "description": "Verified client engagements from Brainlink Softwares: Om Pictures and Shubham Rathi's constituency platform, with problem, approach and outcome for each project.",
+    "image": "/og/work.jpg"
   },
   "/about": {
     "title": "About Us",
-    "description": "Brainlink Softwares is an MSME-registered software engineering studio in Uttar Pradesh, building scalable digital products through direct, transparent collaboration."
+    "description": "Brainlink Softwares is an MSME-registered software engineering studio in Uttar Pradesh, building scalable digital products through direct, transparent collaboration.",
+    "image": "/og/about.jpg"
   },
   "/founder": {
     "title": "Aaditya Vishnoi — Founder & Lead Engineer",
     "description": "Aaditya Vishnoi is the founder and lead engineer of Brainlink Softwares, an MSME-registered software studio in Kanth, Moradabad, helping businesses and founders build scalable web, mobile and SaaS products.",
-    "image": "/images/founder/aaditya-vishnoi-founder-brainlink-softwares.jpeg",
+    "image": "/og/founder.jpg",
     "imageAlt": "Aaditya Vishnoi, Founder & Lead Engineer of Brainlink Softwares",
     "type": "profile"
   },
   "/pricing": {
     "title": "Pricing & Engagement Models",
-    "description": "Transparent engagement models for software development — starter websites, custom product development, dedicated development support, and enterprise solutions."
+    "description": "Transparent engagement models for software development — starter websites, custom product development, dedicated development support, and enterprise solutions.",
+    "image": "/og/pricing.jpg"
   },
   "/careers": {
     "title": "Careers & Internships",
-    "description": "Internship and career opportunities at Brainlink Softwares — practical, mentored experience building real software, subject to current availability."
+    "description": "Internship and career opportunities at Brainlink Softwares — practical, mentored experience building real software, subject to current availability.",
+    "image": "/og/careers.jpg"
   },
   "/contact": {
     "title": "Contact Us",
-    "description": "Get in touch with Brainlink Softwares to discuss your software, web or mobile app project. We respond within 24 hours."
+    "description": "Get in touch with Brainlink Softwares to discuss your software, web or mobile app project. We respond within 24 hours.",
+    "image": "/og/contact.jpg"
   },
   "/blog": {
     "title": "Insights & Blog",
-    "description": "Insights on software development, web engineering, mobile development and startup technology from Brainlink Softwares."
+    "description": "Insights on software development, web engineering, mobile development and startup technology from Brainlink Softwares.",
+    "image": "/og/blog.jpg"
   },
   "/privacy-policy": {
     "title": "Privacy Policy",
-    "description": "How Brainlink Softwares collects, uses and protects information submitted through this website."
+    "description": "How Brainlink Softwares collects, uses and protects information submitted through this website.",
+    "image": "/og/privacy-policy.jpg"
   },
   "/terms": {
     "title": "Terms & Conditions",
-    "description": "Terms and conditions for engaging Brainlink Softwares for software, web and mobile development services."
+    "description": "Terms and conditions for engaging Brainlink Softwares for software, web and mobile development services.",
+    "image": "/og/terms.jpg"
   },
   "/verify-certificate": {
     "title": "Verify Certificate",
-    "description": "Verify certificates and internship credentials issued by Brainlink Softwares using the official Certificate ID."
+    "description": "Verify certificates and internship credentials issued by Brainlink Softwares using the official Certificate ID.",
+    "image": "/og/verify-certificate.jpg"
   }
 }
