@@ -1,0 +1,32 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'vishnoiaaditya29@gmail.com' ||
+        request.auth.token.email == 'ceo.brainlink@gmail.com'
+      );
+    }
+
+    // Documents and uploads
+    match /documents/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /receipts/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /branding/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+  }
+}

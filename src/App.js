@@ -24,12 +24,28 @@ const VerifyCertificate = lazy(() => import("./pages/VerifyCertificate"));
 const VerifyCertificateResult = lazy(() => import("./pages/VerifyCertificateResult"));
 const NotFound = lazy(() => import("./common/NotFound"));
 
+const StudioApp = lazy(() => import("./studio/StudioApp"));
+
 function RouteFallback() {
   return <LoadingState label="Loading..." minHeight="60vh" />;
 }
 
 function AnimatedRoutes() {
   const location = useLocation();
+  const isStudioDomain = typeof window !== 'undefined' && (
+    window.location.hostname === 'studio.brainlink.in' ||
+    window.location.hostname.startsWith('studio.')
+  );
+
+  if (isStudioDomain) {
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/*" element={<StudioApp basePath="" />} />
+        </Routes>
+      </Suspense>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -51,6 +67,9 @@ function AnimatedRoutes() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/verify-certificate" element={<VerifyCertificate />} />
             <Route path="/verify-certificate/:certificateSlug" element={<VerifyCertificateResult />} />
+
+            {/* Brainlink Studio Platform */}
+            <Route path="/studio/*" element={<StudioApp basePath="/studio" />} />
 
             {/* Legacy URLs kept working via redirect, not a hard 404 */}
             <Route path="/service" element={<Navigate to="/services" replace />} />

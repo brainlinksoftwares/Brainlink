@@ -1,0 +1,172 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isSuperAdminEmail() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'vishnoiaaditya29@gmail.com' ||
+        request.auth.token.email == 'ceo.brainlink@gmail.com'
+      );
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && (
+        isSuperAdminEmail() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserData().role == role)
+      );
+    }
+    
+    function isStaff() {
+      return isAuthenticated() && (
+        isSuperAdminEmail() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserData().role in ['SUPER_ADMIN', 'ADMIN', 'SALES_MANAGER', 'SALES_EXECUTIVE', 'PROJECT_MANAGER', 'FINANCE', 'DEVELOPER', 'DESIGNER', 'HR', 'INTERN'])
+      );
+    }
+
+    function isClientUser() {
+      return isAuthenticated() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        getUserData().role == 'CLIENT'
+      );
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Allow self-registration or updating own basic metadata, but super admin can manage all
+      allow create: if isAuthenticated() && (request.auth.uid == userId || isSuperAdminEmail());
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isSuperAdminEmail() || hasRole('ADMIN'));
+      allow delete: if isSuperAdminEmail();
+    }
+
+    // Leads & Contacts & Companies (CRM)
+    match /leads/{leadId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+    
+    match /contacts/{contactId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+    
+    match /companies/{companyId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+
+    // Sales Pipeline, Deals, Meetings, Proposals, Quotations
+    match /deals/{dealId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+    
+    match /meetings/{meetingId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+    
+    match /proposals/{proposalId} {
+      allow read: if isStaff() || (isClientUser() && resource.data.clientEmail == request.auth.token.email);
+      allow write: if isStaff();
+    }
+    
+    match /quotations/{quotationId} {
+      allow read: if isStaff() || (isClientUser() && resource.data.clientEmail == request.auth.token.email);
+      allow write: if isStaff();
+    }
+
+    // Clients & Onboarding
+    match /clients/{clientId} {
+      allow read: if isStaff() || (isClientUser() && (resource.data.userId == request.auth.uid || resource.data.email == request.auth.token.email));
+      allow write: if isStaff();
+    }
+    
+    match /onboarding/{onboardingId} {
+      allow read: if isStaff() || (isClientUser() && resource.data.clientId == request.auth.uid);
+      allow write: if isStaff();
+    }
+
+    // Projects, Milestones, Tasks, Time Tracking
+    match /projects/{projectId} {
+      allow read: if isStaff() || (isClientUser() && resource.data.clientId == request.auth.uid);
+      allow write: if isStaff();
+    }
+    
+    match /milestones/{milestoneId} {
+      allow read: if isStaff() || (isClientUser() && resource.data.clientId == request.auth.uid);
+      allow write: if isStaff();
+    }
+    
+    match /tasks/{taskId} {
+      allow read: if isStaff() || (isClientUser() && resource.data.isClientVisible == true);
+      allow write: if isStaff();
+    }
+    
+    match /time_entries/{timeEntryId} {
+      allow read, write: if isStaff();
+    }
+
+    // Finance: Invoices, Payments, Expenses, Transactions
+    match /invoices/{invoiceId} {
+      allow read: if isStaff() || (isClientUser() && resource.data.clientEmail == request.auth.token.email);
+      allow create, update: if isStaff();
+      // Disallow hard deletes of invoices; cancellations/archives only
+      allow delete: if isSuperAdminEmail();
+    }
+    
+    match /payments/{paymentId} {
+      allow read: if isStaff() || (isClientUser() && resource.data.clientEmail == request.auth.token.email);
+      allow create, update: if isStaff();
+      allow delete: if isSuperAdminEmail();
+    }
+    
+    // Internal Expenses - Strictly Hidden from Clients
+    match /expenses/{expenseId} {
+      allow read, write: if isStaff() && !isClientUser();
+    }
+    
+    // Auditable Financial Ledger - Append-only, Never Hard Delete
+    match /transactions/{transactionId} {
+      allow read: if isStaff() && !isClientUser();
+      allow create: if isStaff();
+      allow update, delete: if isSuperAdminEmail();
+    }
+
+    // Document Management
+    match /documents/{docId} {
+      allow read: if isStaff() || (isClientUser() && resource.data.isPublicToClient == true);
+      allow write: if isStaff();
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated() && (resource.data.recipientId == request.auth.uid || resource.data.recipientRole == getUserData().role || isSuperAdminEmail());
+      allow write: if isAuthenticated();
+    }
+
+    // Audit Logs - Strictly append only for compliance
+    match /audit_logs/{logId} {
+      allow read: if isStaff() && (hasRole('SUPER_ADMIN') || hasRole('ADMIN') || isSuperAdminEmail());
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Immutable audit log
+    }
+
+    // System Settings & Configuration
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdminEmail() || hasRole('SUPER_ADMIN') || hasRole('ADMIN');
+    }
+  }
+}
