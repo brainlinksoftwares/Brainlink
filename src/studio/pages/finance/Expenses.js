@@ -7,9 +7,14 @@ import {
   Building2,
   Tag,
   CreditCard,
+  ChevronRight,
+  Receipt,
+  Server,
+  Users,
 } from 'lucide-react';
 import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
+import Drawer from '../../components/ui/Drawer';
+import StatCard from '../../components/ui/StatCard';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { formatINR, formatDate } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
@@ -37,7 +42,7 @@ export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [expenseToReverse, setExpenseToReverse] = useState(null);
 
@@ -80,7 +85,7 @@ export default function Expenses() {
       paymentMethod: 'Corporate Card',
       date: new Date().toISOString().split('T')[0],
     });
-    setModalOpen(true);
+    setDrawerOpen(true);
   };
 
   const handleSave = async (e) => {
@@ -93,7 +98,7 @@ export default function Expenses() {
     try {
       await createExpense(formData, userProfile?.email);
       toast.success('Expense recorded and appended to financial ledger');
-      setModalOpen(false);
+      setDrawerOpen(false);
       await loadData();
     } catch (err) {
       toast.error('Failed to record expense');
@@ -113,19 +118,33 @@ export default function Expenses() {
     }
   };
 
-  const totalExpenseAmount = expenses
-    .filter(e => !e.reversed)
+  // Metrics
+  const activeExpenses = expenses.filter(e => !e.reversed);
+  const totalExpenseAmount = activeExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const cloudHosting = activeExpenses
+    .filter(e => ['Hosting', 'Software'].includes(e.category))
     .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const contractorPayroll = activeExpenses
+    .filter(e => ['Salary', 'Contractor'].includes(e.category))
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const totalActiveVouchers = activeExpenses.length;
 
   const columns = [
     {
       key: 'expenseId',
-      label: 'Expense ID',
+      label: 'Expense ID & Narrative',
       sortable: true,
       render: (val, row) => (
-        <div>
-          <span className="font-mono font-bold text-rose-600 text-xs">{val || 'EXP-001'}</span>
-          <div className="text-xs font-semibold text-slate-800 mt-0.5">{row.description}</div>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+            <DollarSign className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="font-medium text-slate-900 dark:text-white truncate">{row.description}</div>
+            <div className="text-[11px] font-mono text-rose-600 dark:text-rose-400 mt-0.5">
+              {val || 'EXP-001'}
+            </div>
+          </div>
         </div>
       ),
     },
@@ -134,7 +153,7 @@ export default function Expenses() {
       label: 'Category',
       sortable: true,
       render: (val) => (
-        <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-700">
+        <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
           {val}
         </span>
       ),
@@ -143,203 +162,276 @@ export default function Expenses() {
       key: 'vendor',
       label: 'Vendor / Provider',
       sortable: true,
-      render: (val) => <span className="text-xs font-medium text-slate-700">{val || '—'}</span>,
+      render: (val) => (
+        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{val || '—'}</span>
+      ),
     },
     {
       key: 'amount',
-      label: 'Amount (INR)',
+      label: 'Debit Amount',
       sortable: true,
       align: 'right',
       render: (val, row) => (
-        <span className={`font-bold ${row.reversed ? 'line-through text-slate-400' : 'text-rose-600'}`}>
-          {formatINR(val)}
+        <div className="text-right">
+          <span className={`font-mono text-xs font-medium ${row.reversed ? 'line-through text-slate-400' : 'text-rose-600 dark:text-rose-400'}`}>
+            -{formatINR(val)}
+          </span>
+          {row.reversed && (
+            <div className="text-[10px] text-amber-600 font-semibold">Reversed</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'paymentMethod',
+      label: 'Source',
+      sortable: true,
+      render: (val) => (
+        <span className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+          <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+          <span>{val}</span>
         </span>
       ),
     },
     {
       key: 'date',
-      label: 'Date',
+      label: 'Voucher Date',
       sortable: true,
       render: (val) => (
-        <span className="text-xs text-slate-600 flex items-center gap-1">
+        <span className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5 font-mono">
           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          {formatDate(val)}
+          <span>{formatDate(val)}</span>
         </span>
       ),
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: '',
       align: 'right',
-      render: (_, row) => {
-        if (row.reversed) {
-          return <span className="text-[10px] text-slate-400 font-semibold uppercase">Reversed</span>;
-        }
-        return (
-          <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+      render: (_, row) => (
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          {!row.reversed && (
             <button
               onClick={() => {
                 setExpenseToReverse(row);
                 setDeleteConfirmOpen(true);
               }}
-              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors"
               title="Reverse Expense Voucher"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
-          </div>
-        );
-      },
+          )}
+        </div>
+      ),
     },
   ];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
-            Operating Expenses
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span>Finance</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-slate-900 dark:text-white font-medium">Expenses</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
+            Operational Expenses & Outflow
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Total active expenditures: <strong className="text-rose-600 font-bold">{formatINR(totalExpenseAmount)}</strong>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Operating expenditure, cloud infrastructure costs, contractor invoices, and compliance debit tracking
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all"
+          className="st-btn-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>Add Expense</span>
         </button>
       </div>
 
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          label="Total Operating Outflow"
+          value={formatINR(totalExpenseAmount)}
+          icon={DollarSign}
+          subtext="Net confirmed debits"
+        />
+        <StatCard
+          label="Cloud & SaaS"
+          value={formatINR(cloudHosting)}
+          icon={Server}
+          subtext="Hosting & subscriptions"
+        />
+        <StatCard
+          label="Talent & Payroll"
+          value={formatINR(contractorPayroll)}
+          icon={Users}
+          subtext="Salaries & contractor fees"
+        />
+        <StatCard
+          label="Active Vouchers"
+          value={totalActiveVouchers}
+          icon={Receipt}
+          subtext="Reconciled expense lines"
+        />
+      </div>
+
+      {/* Main Table */}
       <DataTable
         columns={columns}
         data={expenses}
         searchKey={['expenseId', 'description', 'vendor', 'category']}
-        searchPlaceholder="Search expenses by ID, vendor, description..."
+        searchPlaceholder="Search expenses by ID, description, vendor, or category..."
         filterKey="category"
         filterOptions={EXPENSE_CATEGORIES.map(c => ({ label: c, value: c }))}
         exportFileName="brainlink_expenses"
         loading={loading}
-        emptyMessage="No expenses recorded yet."
+        emptyMessage="No operating expenses recorded yet. Click 'Add Expense' to capture overheads."
       />
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+      {/* Slide-over Drawer */}
+      <Drawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
         title="Record Operating Expense"
-        subtitle="Vouchers will be automatically factored into net profitability calculations"
+        subtitle="Log operational overheads, contractor payments, or cloud infrastructure debits"
+        size="md"
         footer={
           <>
             <button
               type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+              onClick={() => setDrawerOpen(false)}
+              className="st-btn-secondary px-3.5 py-1.5 text-xs"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
+              className="st-btn-primary px-4 py-1.5 text-xs shadow-sm"
             >
-              Save Expense
+              Record Debit
             </button>
           </>
         }
       >
-        <form onSubmit={handleSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div className="sm:col-span-2">
-            <label className="block font-semibold text-slate-700 mb-1">Description *</label>
-            <input
-              type="text"
-              required
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="e.g. AWS Cloud Dedicated TURN Server Hosting"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Expense Category</label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-            >
-              {EXPENSE_CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Amount (INR ₹) *</label>
-            <input
-              type="number"
-              required
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              placeholder="e.g. 28500"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-bold"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Vendor / Payee</label>
-            <input
-              type="text"
-              value={formData.vendor}
-              onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-              placeholder="e.g. Amazon Web Services"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Date</label>
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Linked Project (Optional)</label>
-            <select
-              value={formData.projectId}
-              onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-            >
-              <option value="">General Overhead (Not project linked)</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Payment Method</label>
-            <select
-              value={formData.paymentMethod}
-              onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-            >
-              <option value="Corporate Card">Corporate Card</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="UPI">UPI</option>
-              <option value="Cash">Cash</option>
-            </select>
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Expense Narrative / Description *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="e.g. AWS Production Cloud Infrastructure & Kubernetes Cluster"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Expenditure Category
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="st-select"
+              >
+                {EXPENSE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Amount (INR ₹) *
+              </label>
+              <input
+                type="number"
+                required
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="45000"
+                className="st-input font-mono font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Vendor / Service Provider
+              </label>
+              <input
+                type="text"
+                value={formData.vendor}
+                onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+                placeholder="e.g. Amazon Web Services or GitHub"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Allocated Project (Optional)
+              </label>
+              <select
+                value={formData.projectId}
+                onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                className="st-select"
+              >
+                <option value="">General Overhead</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Payment Method
+              </label>
+              <select
+                value={formData.paymentMethod}
+                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                className="st-select"
+              >
+                <option value="Corporate Card">Corporate Credit Card</option>
+                <option value="Bank Transfer">Bank Wire / RTGS</option>
+                <option value="UPI">UPI</option>
+                <option value="Petty Cash">Petty Cash</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Voucher Date
+              </label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="st-input"
+              />
+            </div>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={handleReverse}
         title="Reverse Expense Voucher"
-        message="Are you sure you want to reverse this expense? A reversal transaction will be recorded in the audit ledger."
-        confirmText="Reverse Expense"
+        message="Are you sure you want to reverse this operating expense in the audit ledger?"
       />
     </div>
   );

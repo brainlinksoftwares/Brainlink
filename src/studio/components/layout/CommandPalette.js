@@ -6,11 +6,10 @@ import {
   Building2,
   FolderGit2,
   Receipt,
-  CheckSquare,
   TrendingUp,
-  FileText,
   X,
   ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { getLeads } from '../../services/crmService';
 import { getProjects } from '../../services/projectService';
@@ -23,6 +22,7 @@ export default function CommandPalette({ isOpen, onClose }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Keyboard shortcut listener
   useEffect(() => {
@@ -43,6 +43,7 @@ export default function CommandPalette({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen || !query.trim()) {
       setResults([]);
+      setSelectedIndex(0);
       return;
     }
 
@@ -67,7 +68,7 @@ export default function CommandPalette({ isOpen, onClose }) {
             title: l.name,
             subtitle: `Lead • ${l.company || 'No Company'} • ${l.status}`,
             icon: Users,
-            url: '/studio/crm/leads',
+            url: '/crm/leads',
           }));
 
         const projectMatches = projects
@@ -78,7 +79,7 @@ export default function CommandPalette({ isOpen, onClose }) {
             title: p.name,
             subtitle: `Project • ${p.clientName} • ${p.status}`,
             icon: FolderGit2,
-            url: `/studio/projects`,
+            url: '/projects',
           }));
 
         const invoiceMatches = invoices
@@ -87,9 +88,9 @@ export default function CommandPalette({ isOpen, onClose }) {
           .map(i => ({
             id: i.id,
             title: i.invoiceNumber,
-            subtitle: `Invoice • ₹${i.total} • ${i.clientName} • ${i.status}`,
+            subtitle: `Invoice • ₹${i.total || 0} • ${i.clientName} • ${i.status}`,
             icon: Receipt,
-            url: `/studio/finance/invoices`,
+            url: '/finance/invoices',
           }));
 
         const clientMatches = clients
@@ -100,7 +101,7 @@ export default function CommandPalette({ isOpen, onClose }) {
             title: c.companyName,
             subtitle: `Client • ${c.primaryContact || ''} • ${c.status}`,
             icon: Building2,
-            url: `/studio/clients`,
+            url: '/clients',
           }));
 
         const dealMatches = deals
@@ -111,16 +112,17 @@ export default function CommandPalette({ isOpen, onClose }) {
             title: d.name,
             subtitle: `Deal • ₹${d.value || 0} • ${d.stage}`,
             icon: TrendingUp,
-            url: `/studio/sales/pipeline`,
+            url: '/sales/pipeline',
           }));
 
         setResults([...leadMatches, ...projectMatches, ...invoiceMatches, ...clientMatches, ...dealMatches]);
+        setSelectedIndex(0);
       } catch (err) {
         console.error('Search error:', err);
       } finally {
         setLoading(false);
       }
-    }, 250);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [query, isOpen]);
@@ -128,128 +130,136 @@ export default function CommandPalette({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const quickNav = [
-    { title: 'Executive Dashboard', subtitle: 'View business health & revenue metrics', icon: TrendingUp, url: '/studio/dashboard' },
-    { title: 'Pipeline Kanban', subtitle: 'Drag & drop deal stages', icon: TrendingUp, url: '/studio/sales/pipeline' },
-    { title: 'GST Invoices', subtitle: 'Manage invoices, generate PDF', icon: Receipt, url: '/studio/finance/invoices' },
-    { title: 'Projects & Tasks', subtitle: 'Active client engineering projects', icon: FolderGit2, url: '/studio/projects' },
-    { title: 'Client Onboarding', subtitle: 'Track onboarding checklists', icon: Building2, url: '/studio/clients/onboarding' },
+    { title: 'Executive Dashboard', subtitle: 'View business health & revenue metrics', icon: TrendingUp, url: '/dashboard' },
+    { title: 'Pipeline Kanban', subtitle: 'Drag & drop deal stages', icon: TrendingUp, url: '/sales/pipeline' },
+    { title: 'GST Invoices', subtitle: 'Manage invoices, generate PDF', icon: Receipt, url: '/finance/invoices' },
+    { title: 'Projects & Tasks', subtitle: 'Active client engineering projects', icon: FolderGit2, url: '/projects' },
+    { title: 'Client Onboarding', subtitle: 'Track onboarding checklists', icon: Building2, url: '/clients/onboarding' },
   ];
+
+  const displayItems = query.trim() ? results : quickNav;
 
   const handleSelect = (url) => {
     navigate(url);
     onClose();
   };
 
+  const handleKeyDownList = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % (displayItems.length || 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev - 1 + (displayItems.length || 1)) % (displayItems.length || 1));
+    } else if (e.key === 'Enter' && displayItems[selectedIndex]) {
+      e.preventDefault();
+      handleSelect(displayItems[selectedIndex].url);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-start justify-center pt-16 sm:pt-24 px-4"
+      onClick={onClose}
+    >
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
-      />
-      <div className="min-h-full flex items-start justify-center p-4 pt-16 sm:pt-24 text-center">
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden text-left"
-        >
-          {/* Search Header */}
-          <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-            <Search className="w-5 h-5 text-slate-400 shrink-0" />
-            <input
-              type="text"
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search leads, clients, deals, projects, invoices..."
-              className="w-full text-sm font-medium text-slate-800 focus:outline-none placeholder-slate-400"
-            />
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
-            >
+        className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-fadeIn"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleKeyDownList}
+      >
+        {/* Search Input Box */}
+        <div className="relative flex items-center px-4 py-3.5 border-b border-slate-200 dark:border-slate-800">
+          <Search className="w-4 h-4 text-slate-400 absolute left-4" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search leads, projects, invoices, clients..."
+            autoFocus
+            className="w-full pl-8 pr-8 text-sm bg-transparent text-slate-900 dark:text-white placeholder-slate-400 outline-none"
+          />
+          {query ? (
+            <button onClick={() => setQuery('')} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
               <X className="w-4 h-4" />
             </button>
-          </div>
+          ) : (
+            <kbd className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+              ESC
+            </kbd>
+          )}
+        </div>
 
-          {/* Results List */}
-          <div className="max-h-96 overflow-y-auto p-2">
-            {loading ? (
-              <div className="py-8 text-center text-xs text-slate-400">Searching Brainlink Studio...</div>
-            ) : query.trim() ? (
-              results.length > 0 ? (
-                <div className="space-y-1">
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Search Results ({results.length})
-                  </div>
-                  {results.map((r) => {
-                    const Icon = r.icon;
-                    return (
-                      <div
-                        key={r.id + r.title}
-                        onClick={() => handleSelect(r.url)}
-                        className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                              {r.title}
-                            </div>
-                            <div className="text-[11px] text-slate-400">{r.subtitle}</div>
-                          </div>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  No matching records found for "{query}"
-                </div>
-              )
-            ) : (
-              <div className="space-y-1">
-                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Quick Navigation
-                </div>
-                {quickNav.map((nav) => {
-                  const Icon = nav.icon;
-                  return (
-                    <div
-                      key={nav.title}
-                      onClick={() => handleSelect(nav.url)}
-                      className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 flex items-center justify-center shrink-0 transition-colors">
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
-                            {nav.title}
-                          </div>
-                          <div className="text-[11px] text-slate-400">{nav.subtitle}</div>
-                        </div>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Footer Shortcuts hint */}
-          <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
-            <span>Navigation Shortcuts</span>
-            <div className="flex items-center gap-2">
-              <span>ESC to close</span>
-              <span>•</span>
-              <span>CTRL+K to toggle</span>
+        {/* Results / Quick Nav Container */}
+        <div className="max-h-80 overflow-y-auto studio-scrollbar p-2">
+          {loading ? (
+            <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+              <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <span>Searching across Brainlink...</span>
             </div>
+          ) : displayItems.length === 0 ? (
+            <div className="py-10 text-center px-4">
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No results found</p>
+              <p className="text-xs text-slate-400 mt-1">Try searching by client name, project code, or invoice ID.</p>
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                {query.trim() ? `Search Results (${results.length})` : 'Quick Navigation'}
+              </div>
+              {displayItems.map((item, index) => {
+                const Icon = item.icon;
+                const isSelected = index === selectedIndex;
+                return (
+                  <div
+                    key={item.id || item.title}
+                    onClick={() => handleSelect(item.url)}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                          isSelected
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold truncate">{item.title}</div>
+                        <div className="text-[11px] text-slate-400 truncate">{item.subtitle}</div>
+                      </div>
+                    </div>
+                    <ArrowRight className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Keyboard Helper Footer */}
+        <div className="px-4 py-2 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+          <div className="flex items-center gap-3">
+            <span>
+              <kbd className="font-mono bg-white dark:bg-slate-900 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 mr-1">↑</kbd>
+              <kbd className="font-mono bg-white dark:bg-slate-900 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 mr-1">↓</kbd>
+              Navigate
+            </span>
+            <span>
+              <kbd className="font-mono bg-white dark:bg-slate-900 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 mr-1">↵</kbd>
+              Select
+            </span>
           </div>
+          <span className="flex items-center gap-1 text-[10px]">
+            <Sparkles className="w-3 h-3 text-blue-500" />
+            Brainlink Universal Search
+          </span>
         </div>
       </div>
     </div>

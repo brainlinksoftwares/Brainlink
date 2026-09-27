@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Shield, Lock, Mail, ArrowRight, Sparkles, Building2, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Shield } from 'lucide-react';
+import Modal from '../../components/ui/Modal';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export default function Login() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
 
-  const from = location.state?.from?.pathname || '/studio/dashboard';
+  const from = location.state?.from?.pathname || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,82 +62,108 @@ export default function Login() {
     try {
       await resetPassword(resetEmail);
       setResetSent(true);
-      toast.success('Password reset email dispatched');
+      toast.success('Password reset link sent to your inbox');
     } catch (err) {
-      toast.error(err.message || 'Could not send reset email');
+      toast.error(err.message || 'Failed to send reset link');
     }
   };
 
-  // Demo autofill for rapid access
-  const handleQuickFillAdmin = (adminEmail) => {
-    setEmail(adminEmail);
-    setPassword('Brainlink@2026');
-  };
-
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
-      {/* Background Accent Gradients */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        {/* Brand Logo */}
-        <div className="flex justify-center items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white shadow-xl shadow-blue-500/25 text-lg">
-            BS
-          </div>
+    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 font-sans">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600 text-white font-bold text-sm shadow-sm mb-3">
+          BS
         </div>
-
-        <h2 className="mt-5 text-center text-2xl font-extrabold tracking-tight text-white font-heading">
+        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
           Brainlink Studio
         </h2>
-        <p className="mt-1.5 text-center text-xs text-slate-400">
-          Internal Business Operating System • Brainlink Softwares
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Enterprise Business Operating System
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4 sm:px-0">
-        <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 py-8 px-6 shadow-2xl rounded-2xl sm:px-10 text-slate-200">
-          <form className="space-y-4" onSubmit={handleSubmit}>
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4">
+        <div className="st-card p-6 sm:p-8 bg-white dark:bg-slate-900">
+          {/* Google Sign In */}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors shadow-2xs"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200 dark:border-slate-800" />
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase font-semibold">
+              <span className="bg-white dark:bg-slate-900 px-2 text-slate-400">
+                Or with credentials
+              </span>
+            </div>
+          </div>
+
+          {/* Email / Password Form */}
+          <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
             <div>
-              <label className="block text-xs font-semibold text-slate-300">
-                Work Email
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Email Address
               </label>
-              <div className="mt-1.5 relative">
-                <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@brainlink.in"
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-800/80 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="st-input pl-9"
                 />
               </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-slate-300">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-slate-600 dark:text-slate-300 font-medium">
                   Password
                 </label>
                 <button
                   type="button"
                   onClick={() => setResetModalOpen(true)}
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  Forgot password?
+                  Forgot?
                 </button>
               </div>
-              <div className="mt-1.5 relative">
-                <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-800/80 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="••••••••••••"
+                  className="st-input pl-9 font-mono"
                 />
               </div>
             </div>
@@ -144,147 +171,102 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-md text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+              className="st-btn-primary w-full h-9 mt-2"
             >
-              {loading ? 'Authenticating...' : 'Sign in to Studio'}
+              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-800" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-2 bg-slate-900 text-slate-500">Or continue with</span>
-              </div>
+          {/* Super Admin Quick Presets for Testing */}
+          <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
+            <div className="flex items-center gap-1 text-[10px] uppercase font-semibold text-slate-400 mb-2">
+              <Shield className="w-3 h-3 text-blue-600" />
+              <span>Super Admin Credentials</span>
             </div>
-
-            <div className="mt-4">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-slate-700 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                onClick={() => {
+                  setEmail('vishnoiaaditya29@gmail.com');
+                  setPassword('Brainlink@2026!');
+                }}
+                className="p-1.5 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:border-blue-400 text-left truncate transition-colors"
+                title="Fill Founder Account"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                <span>Google Workspace</span>
+                Aaditya (Founder)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('ceo.brainlink@gmail.com');
+                  setPassword('Brainlink@2026!');
+                }}
+                className="p-1.5 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:border-blue-400 text-left truncate transition-colors"
+                title="Fill CEO Account"
+              >
+                CEO Brainlink
               </button>
             </div>
           </div>
-
-          {/* Super Admin Notice & Quick Preset Buttons */}
-          <div className="mt-6 pt-5 border-t border-slate-800 text-xs">
-            <div className="flex items-center gap-1.5 text-slate-400 mb-2 font-medium">
-              <Shield className="w-3.5 h-3.5 text-blue-400" />
-              <span>Configured Super Admins:</span>
-            </div>
-            <div className="space-y-1.5">
-              <button
-                type="button"
-                onClick={() => handleQuickFillAdmin('vishnoiaaditya29@gmail.com')}
-                className="w-full text-left px-2.5 py-1.5 rounded bg-slate-800/60 hover:bg-slate-800 text-[11px] text-slate-300 font-mono flex items-center justify-between border border-slate-700/60"
-              >
-                <span>vishnoiaaditya29@gmail.com</span>
-                <span className="text-[10px] text-blue-400 font-sans">Founder</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFillAdmin('ceo.brainlink@gmail.com')}
-                className="w-full text-left px-2.5 py-1.5 rounded bg-slate-800/60 hover:bg-slate-800 text-[11px] text-slate-300 font-mono flex items-center justify-between border border-slate-700/60"
-              >
-                <span>ceo.brainlink@gmail.com</span>
-                <span className="text-[10px] text-blue-400 font-sans">Super Admin</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 text-center text-xs text-slate-400">
-          <span>Brainlink Softwares Internal System • Authorized Personnel Only</span>
         </div>
       </div>
 
-      {/* Password Reset Modal */}
-      {resetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 text-slate-200 shadow-2xl">
-            <h3 className="text-base font-bold text-white">Reset Password</h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Enter your work email to receive password recovery instructions.
+      {/* Forgot Password Modal */}
+      <Modal
+        isOpen={resetModalOpen}
+        onClose={() => {
+          setResetModalOpen(false);
+          setResetSent(false);
+        }}
+        title="Reset Password"
+        subtitle="We will send a password reset link to your registered email"
+      >
+        {resetSent ? (
+          <div className="py-4 text-center text-xs space-y-3">
+            <p className="text-slate-600 dark:text-slate-300">
+              Reset instructions have been sent to <strong>{resetEmail}</strong>.
             </p>
-
-            {resetSent ? (
-              <div className="mt-4 p-3 bg-emerald-950/50 border border-emerald-800 rounded-lg flex items-center gap-2 text-xs text-emerald-300">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                <span>Password reset link sent! Check your inbox.</span>
-              </div>
-            ) : (
-              <form onSubmit={handleResetPassword} className="mt-4 space-y-3">
-                <input
-                  type="email"
-                  required
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="name@brainlink.in"
-                  className="w-full px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                />
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setResetModalOpen(false);
-                      setResetSent(false);
-                    }}
-                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                  >
-                    Send Link
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {resetSent && (
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setResetModalOpen(false);
-                    setResetSent(false);
-                  }}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg"
-                >
-                  Done
-                </button>
-              </div>
-            )}
+            <button
+              onClick={() => {
+                setResetModalOpen(false);
+                setResetSent(false);
+              }}
+              className="st-btn-primary"
+            >
+              Done
+            </button>
           </div>
-        </div>
-      )}
+        ) : (
+          <form onSubmit={handleResetPassword} className="space-y-3 text-xs">
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="name@brainlink.in"
+                className="st-input"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setResetModalOpen(false)}
+                className="st-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="st-btn-primary">
+                Send Reset Link
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }

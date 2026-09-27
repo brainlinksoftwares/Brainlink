@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users,
   Plus,
   Edit,
   Trash2,
   TrendingUp,
-  Download,
   Upload,
   Phone,
   Mail,
   Building2,
-  Sparkles,
+  Globe,
+  MapPin,
+  CheckCircle,
 } from 'lucide-react';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
+import Drawer from '../../components/ui/Drawer';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { formatINR, formatDate, parseCSV } from '../../utils/formatters';
@@ -53,12 +55,17 @@ export default function Leads() {
 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+
+  // Drawer / Modal States
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [convertModalOpen, setConvertModalOpen] = useState(false);
-  const [editingLead, setEditingLead] = useState(null);
-  const [selectedLeadForConvert, setSelectedLeadForConvert] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const [editingLead, setEditingLead] = useState(null);
+  const [activeLead, setActiveLead] = useState(null);
   const [leadToDelete, setLeadToDelete] = useState(null);
+  const [selectedLeadForConvert, setSelectedLeadForConvert] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -87,7 +94,7 @@ export default function Leads() {
     probability: 50,
   });
 
-  const loadLeads = async () => {
+  const loadLeads = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getLeads();
@@ -97,11 +104,11 @@ export default function Leads() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadLeads();
-  }, []);
+  }, [loadLeads]);
 
   const handleOpenCreate = () => {
     setEditingLead(null);
@@ -123,7 +130,7 @@ export default function Leads() {
       priority: 'Medium',
       notes: '',
     });
-    setModalOpen(true);
+    setDrawerOpen(true);
   };
 
   const handleOpenEdit = (lead) => {
@@ -146,7 +153,12 @@ export default function Leads() {
       priority: lead.priority || 'Medium',
       notes: lead.notes || '',
     });
-    setModalOpen(true);
+    setDrawerOpen(true);
+  };
+
+  const handleRowClick = (lead) => {
+    setActiveLead(lead);
+    setDetailDrawerOpen(true);
   };
 
   const handleSave = async (e) => {
@@ -158,27 +170,27 @@ export default function Leads() {
 
     try {
       if (editingLead) {
-        await updateLead(editingLead.id, formData, userProfile?.email);
-        toast.success(`Updated lead: ${formData.name}`);
+        await updateLead(editingLead.id, formData);
+        toast.success('Lead updated successfully');
       } else {
-        await createLead(formData, userProfile?.email);
-        toast.success(`Created lead: ${formData.name}`);
+        await createLead(formData);
+        toast.success('Lead created successfully');
       }
-      setModalOpen(false);
-      await loadLeads();
+      setDrawerOpen(false);
+      loadLeads();
     } catch (err) {
-      toast.error(err.message || 'Error saving lead');
+      toast.error('Failed to save lead');
     }
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDelete = async () => {
     if (!leadToDelete) return;
     try {
-      await deleteLead(leadToDelete.id, userProfile?.email);
-      toast.success('Lead deleted successfully');
+      await deleteLead(leadToDelete.id);
+      toast.success('Lead deleted');
       setDeleteConfirmOpen(false);
-      setLeadToDelete(null);
-      await loadLeads();
+      setDetailDrawerOpen(false);
+      loadLeads();
     } catch (err) {
       toast.error('Failed to delete lead');
     }
@@ -187,177 +199,169 @@ export default function Leads() {
   const handleOpenConvert = (lead) => {
     setSelectedLeadForConvert(lead);
     setDealFormData({
-      name: `${lead.company || lead.name} Project`,
-      value: lead.budget || '',
-      expectedClose: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      name: `${lead.company || lead.name} — Software Contract`,
+      value: lead.budget || 100000,
+      expectedClose: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
       probability: 60,
     });
     setConvertModalOpen(true);
   };
 
-  const handleConvertLead = async (e) => {
+  const handleConvertDeal = async (e) => {
     e.preventDefault();
     if (!selectedLeadForConvert) return;
 
     try {
-      await createDeal(
-        {
-          name: dealFormData.name,
-          company: selectedLeadForConvert.company || selectedLeadForConvert.name,
-          contactName: selectedLeadForConvert.name,
-          email: selectedLeadForConvert.email,
-          phone: selectedLeadForConvert.phone,
-          value: Number(dealFormData.value) || 0,
-          probability: Number(dealFormData.probability) || 50,
-          stage: 'Proposal',
-          expectedClose: dealFormData.expectedClose,
-          leadId: selectedLeadForConvert.id,
-          owner: selectedLeadForConvert.assignedTo || userProfile?.displayName,
-        },
-        userProfile?.email
-      );
+      await createDeal({
+        leadId: selectedLeadForConvert.id,
+        name: dealFormData.name,
+        company: selectedLeadForConvert.company || selectedLeadForConvert.name,
+        contactPerson: selectedLeadForConvert.name,
+        email: selectedLeadForConvert.email,
+        phone: selectedLeadForConvert.phone,
+        value: Number(dealFormData.value) || 0,
+        stage: 'Qualified',
+        probability: Number(dealFormData.probability) || 50,
+        expectedClose: dealFormData.expectedClose,
+        assignedTo: selectedLeadForConvert.assignedTo || 'Aaditya Vishnoi',
+        notes: `Converted from lead ${selectedLeadForConvert.name}`,
+      });
 
-      // Update lead status to Proposal Sent
-      await updateLead(selectedLeadForConvert.id, { status: 'Proposal Sent' }, userProfile?.email);
+      await updateLead(selectedLeadForConvert.id, {
+        status: 'Qualified',
+        notes: `${selectedLeadForConvert.notes || ''}\n[Converted to deal on ${new Date().toLocaleDateString()}]`,
+      });
 
-      toast.success('Lead successfully converted to Deal in Sales Pipeline!');
+      toast.success('Converted to Deal in Qualified stage!');
       setConvertModalOpen(false);
-      setSelectedLeadForConvert(null);
-      await loadLeads();
+      setDetailDrawerOpen(false);
+      loadLeads();
     } catch (err) {
-      toast.error('Failed to convert lead to deal');
+      toast.error('Failed to convert deal');
     }
   };
 
-  const handleCSVImport = (e) => {
-    const file = e.target.files[0];
+  const handleCSVUpload = async (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const text = evt.target.result;
-        const parsed = parseCSV(text);
-        let count = 0;
-        for (const row of parsed) {
-          if (row.name || row.Name) {
-            await createLead(
-              {
-                name: row.name || row.Name,
-                company: row.company || row.Company || '',
-                email: row.email || row.Email || '',
-                phone: row.phone || row.Phone || '',
-                budget: Number(row.budget || row.Budget) || 0,
-                status: row.status || row.Status || 'New',
-                source: row.source || row.Source || 'Website',
-              },
-              userProfile?.email
-            );
-            count++;
-          }
+    try {
+      const records = await parseCSV(file);
+      let count = 0;
+      for (const rec of records) {
+        if (rec.name || rec.Name) {
+          await createLead({
+            name: rec.name || rec.Name,
+            company: rec.company || rec.Company || '',
+            email: rec.email || rec.Email || '',
+            phone: rec.phone || rec.Phone || '',
+            source: rec.source || rec.Source || 'CSV Import',
+            budget: Number(rec.budget || rec.Budget || 0),
+            status: rec.status || rec.Status || 'New',
+          });
+          count++;
         }
-        toast.success(`Imported ${count} leads from CSV`);
-        await loadLeads();
-      } catch (err) {
-        toast.error('Failed to parse CSV file');
       }
-    };
-    reader.readAsText(file);
+      toast.success(`Successfully imported ${count} leads`);
+      loadLeads();
+    } catch (err) {
+      toast.error('Failed to parse CSV file');
+    }
   };
 
   const columns = [
     {
       key: 'name',
-      label: 'Lead Name & Company',
+      label: 'Lead',
       sortable: true,
       render: (val, row) => (
-        <div>
-          <div className="font-bold text-slate-900">{val}</div>
-          <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-            <Building2 className="w-3 h-3 text-slate-400" />
-            <span>{row.company || 'Direct Contact'}</span>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-md bg-blue-600/10 text-blue-600 dark:text-blue-400 font-semibold text-xs flex items-center justify-center shrink-0">
+            {val ? val.charAt(0).toUpperCase() : 'L'}
+          </div>
+          <div className="min-w-0">
+            <span className="font-medium text-xs text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              {val}
+            </span>
+            <div className="text-[11px] text-slate-400 truncate">
+              {row.company || 'No Company'}
+            </div>
           </div>
         </div>
-      ),
-    },
-    {
-      key: 'contact',
-      label: 'Contact Details',
-      render: (_, row) => (
-        <div className="text-xs space-y-0.5">
-          {row.email && (
-            <div className="text-slate-600 flex items-center gap-1">
-              <Mail className="w-3 h-3 text-slate-400" />
-              <span>{row.email}</span>
-            </div>
-          )}
-          {row.phone && (
-            <div className="text-slate-600 flex items-center gap-1">
-              <Phone className="w-3 h-3 text-slate-400" />
-              <span>{row.phone}</span>
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'budget',
-      label: 'Budget',
-      sortable: true,
-      align: 'right',
-      render: (val) => <span className="font-semibold text-slate-800">{formatINR(val)}</span>,
-    },
-    {
-      key: 'source',
-      label: 'Source',
-      sortable: true,
-      render: (val) => (
-        <span className="text-xs px-2 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">
-          {val || 'Direct'}
-        </span>
       ),
     },
     {
       key: 'status',
       label: 'Status',
       sortable: true,
-      render: (val) => <StatusBadge status={val} />,
+      render: (val) => <StatusBadge status={val || 'New'} />,
     },
     {
-      key: 'priority',
-      label: 'Priority',
+      key: 'leadScore',
+      label: 'Score',
       sortable: true,
-      render: (val) => <StatusBadge status={val} />,
+      render: (val) => {
+        const score = Number(val) || 50;
+        const color = score >= 75 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40' : score >= 40 ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/40' : 'text-slate-600 bg-slate-100 dark:bg-slate-800';
+        return (
+          <span className={`px-2 py-0.5 rounded font-mono text-[11px] font-semibold ${color}`}>
+            {score}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'budget',
+      label: 'Budget',
+      sortable: true,
+      align: 'right',
+      render: (val) => (
+        <span className="font-mono text-xs font-medium text-slate-800 dark:text-slate-200">
+          {val ? formatINR(val) : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'source',
+      label: 'Source',
+      sortable: true,
+      render: (val) => <span className="text-xs text-slate-500 dark:text-slate-400">{val || 'Website'}</span>,
+    },
+    {
+      key: 'createdAt',
+      label: 'Date Added',
+      sortable: true,
+      render: (val) => <span className="text-xs text-slate-400">{formatDate(val)}</span>,
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: '',
       align: 'right',
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => handleOpenConvert(row)}
-            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="p-1 rounded text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
             title="Convert to Deal"
           >
-            <TrendingUp className="w-4 h-4" />
+            <TrendingUp className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => handleOpenEdit(row)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
             title="Edit Lead"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => {
               setLeadToDelete(row);
               setDeleteConfirmOpen(true);
             }}
-            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+            className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
             title="Delete Lead"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       ),
@@ -365,254 +369,368 @@ export default function Leads() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
-            Leads Management
+          <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+            Leads
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Capture, qualify, score, and convert prospective business inquiries
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Manage your sales prospects, qualification, scoring, and deal conversions.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {/* CSV Import */}
-          <label className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer">
+          <label className="st-btn-secondary st-btn-sm cursor-pointer">
             <Upload className="w-3.5 h-3.5" />
             <span>Import CSV</span>
-            <input type="file" accept=".csv" onChange={handleCSVImport} className="hidden" />
+            <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
           </label>
 
-          {/* New Lead Button */}
-          <button
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Lead</span>
+          <button onClick={handleOpenCreate} className="st-btn-primary st-btn-sm">
+            <Plus className="w-3.5 h-3.5" />
+            <span>New Lead</span>
           </button>
         </div>
       </div>
 
-      {/* Leads Table */}
+      {/* Main Data Table */}
       <DataTable
         columns={columns}
         data={leads}
         searchKey={['name', 'company', 'email', 'phone']}
         searchPlaceholder="Search leads by name, company, email..."
         filterKey="status"
-        filterOptions={LEAD_STATUSES.map(s => ({ label: s, value: s }))}
-        onRowClick={(lead) => handleOpenEdit(lead)}
-        exportFileName="brainlink_leads"
+        filterOptions={LEAD_STATUSES.map((s) => ({ label: s, value: s }))}
+        onRowClick={handleRowClick}
         loading={loading}
-        emptyMessage="No leads found in database. Add a lead to get started."
+        exportFileName="brainlink_leads"
       />
 
-      {/* Create / Edit Modal */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editingLead ? 'Edit Lead' : 'Create New Lead'}
-        subtitle="Record lead details, requirement specifications, and estimated budget"
-        maxWidth="max-w-2xl"
+      {/* SIDE DRAWER: Create / Edit Lead */}
+      <Drawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={editingLead ? 'Edit Lead' : 'New Lead'}
+        subtitle={editingLead ? `Updating record for ${editingLead.name}` : 'Enter prospect information'}
+        width="max-w-xl"
         footer={
           <>
-            <button
-              type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
-            >
+            <button type="button" onClick={() => setDrawerOpen(false)} className="st-btn-secondary">
               Cancel
             </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
-            >
+            <button type="submit" form="lead-form" className="st-btn-primary">
               {editingLead ? 'Save Changes' : 'Create Lead'}
             </button>
           </>
         }
       >
-        <form onSubmit={handleSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Lead / Contact Name *</label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Rohan Sharma"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
+        <form id="lead-form" onSubmit={handleSave} className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Rahul Sharma"
+                className="st-input"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Company Name
+              </label>
+              <input
+                type="text"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                placeholder="e.g. Acme Innovations"
+                className="st-input"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="rahul@example.com"
+                className="st-input"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Phone / Mobile
+              </label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+91 98765 43210"
+                className="st-input"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Source
+              </label>
+              <select
+                value={formData.source}
+                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                className="st-select w-full"
+              >
+                {LEAD_SOURCES.map((src) => (
+                  <option key={src} value={src}>{src}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="st-select w-full"
+              >
+                {LEAD_STATUSES.map((st) => (
+                  <option key={st} value={st}>{st}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Estimated Budget (INR)
+              </label>
+              <input
+                type="number"
+                value={formData.budget}
+                onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                placeholder="e.g. 150000"
+                className="st-input font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Lead Score (0–100)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={formData.leadScore}
+                onChange={(e) => setFormData({ ...formData, leadScore: e.target.value })}
+                className="st-input font-mono"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Company / Organization</label>
-            <input
-              type="text"
-              value={formData.company}
-              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-              placeholder="e.g. Zenith Tech Solutions"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="rohan@example.com"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Phone Number</label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+91 98765 43210"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Estimated Budget (INR ₹)</label>
-            <input
-              type="number"
-              value={formData.budget}
-              onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-              placeholder="e.g. 500000"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Lead Source</label>
-            <select
-              value={formData.source}
-              onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-            >
-              {LEAD_SOURCES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-            >
-              {LEAD_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Priority</label>
-            <select
-              value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-            >
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Urgent">Urgent</option>
-            </select>
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="block font-semibold text-slate-700 mb-1">Project Requirements / Brief</label>
+            <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+              Internal Notes / Requirements
+            </label>
             <textarea
-              rows={2}
-              value={formData.requirement}
-              onChange={(e) => setFormData({ ...formData, requirement: e.target.value })}
-              placeholder="e.g. Next.js SaaS portal with AI chatbot integration and Razorpay"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="block font-semibold text-slate-700 mb-1">Internal Notes</label>
-            <textarea
-              rows={2}
+              rows={3}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Discussion notes, meeting pointers..."
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
+              placeholder="Key deliverables, timeline, or follow-up notes..."
+              className="st-textarea"
             />
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
-      {/* Convert Lead to Deal Modal */}
+      {/* SIDE DRAWER: Lead 360 Detail View */}
+      <Drawer
+        isOpen={detailDrawerOpen}
+        onClose={() => setDetailDrawerOpen(false)}
+        title={activeLead?.name || 'Lead Details'}
+        subtitle={activeLead?.company ? `Company: ${activeLead.company}` : 'Prospect profile'}
+        width="max-w-lg"
+        footer={
+          activeLead && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setLeadToDelete(activeLead);
+                  setDeleteConfirmOpen(true);
+                }}
+                className="st-btn-danger st-btn-sm"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenEdit(activeLead)}
+                className="st-btn-secondary st-btn-sm"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                <span>Edit</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenConvert(activeLead)}
+                className="st-btn-primary st-btn-sm"
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>Convert to Deal</span>
+              </button>
+            </>
+          )
+        }
+      >
+        {activeLead && (
+          <div className="space-y-5 text-xs">
+            {/* Status & Score Banner */}
+            <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">
+                  Current Status
+                </span>
+                <StatusBadge status={activeLead.status || 'New'} />
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">
+                  Lead Score
+                </span>
+                <span className="font-mono text-sm font-bold text-slate-900 dark:text-white">
+                  {activeLead.leadScore || 50}/100
+                </span>
+              </div>
+            </div>
+
+            {/* Contact Details */}
+            <div className="st-card p-4 space-y-2.5">
+              <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                Contact Information
+              </h4>
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>{activeLead.email || 'No email provided'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>{activeLead.phone || 'No phone provided'}</span>
+              </div>
+              {activeLead.website && (
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                  <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <a href={activeLead.website} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                    {activeLead.website}
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Business Parameters */}
+            <div className="st-card p-4 space-y-2.5">
+              <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                Commercials
+              </h4>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Budget:</span>
+                <span className="font-mono font-semibold text-slate-800 dark:text-white">
+                  {activeLead.budget ? formatINR(activeLead.budget) : 'Not specified'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Source:</span>
+                <span className="text-slate-700 dark:text-slate-300">{activeLead.source || 'Website'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Assigned To:</span>
+                <span className="text-slate-700 dark:text-slate-300">{activeLead.assignedTo || 'Unassigned'}</span>
+              </div>
+            </div>
+
+            {/* Notes */}
+            {activeLead.notes && (
+              <div className="st-card p-4">
+                <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                  Internal Notes
+                </h4>
+                <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                  {activeLead.notes}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
+
+      {/* Convert to Deal Modal */}
       <Modal
         isOpen={convertModalOpen}
         onClose={() => setConvertModalOpen(false)}
-        title="Convert Lead to Pipeline Deal"
-        subtitle={`Launch deal tracking for ${selectedLeadForConvert?.name}`}
-        footer={
-          <>
-            <button
-              type="button"
-              onClick={() => setConvertModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleConvertLead}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
-            >
-              Convert to Deal
-            </button>
-          </>
-        }
+        title="Convert Lead to Sales Deal"
+        subtitle={`Creates an active opportunity in the Qualified stage for ${selectedLeadForConvert?.name}`}
       >
-        <form onSubmit={handleConvertLead} className="space-y-3 text-xs">
+        <form onSubmit={handleConvertDeal} className="space-y-3.5 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Deal Title</label>
+            <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+              Deal Title *
+            </label>
             <input
               type="text"
               required
               value={dealFormData.name}
               onChange={(e) => setDealFormData({ ...dealFormData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
+              className="st-input"
             />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Deal Value (INR ₹)</label>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Value (INR) *
+              </label>
               <input
                 type="number"
                 required
                 value={dealFormData.value}
                 onChange={(e) => setDealFormData({ ...dealFormData, value: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
+                className="st-input font-mono"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Expected Close Date</label>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Target Close Date
+              </label>
               <input
                 type="date"
                 value={dealFormData.expectedClose}
                 onChange={(e) => setDealFormData({ ...dealFormData, expectedClose: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
+                className="st-input"
               />
             </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <button type="button" onClick={() => setConvertModalOpen(false)} className="st-btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" className="st-btn-primary">
+              Confirm & Open Deal
+            </button>
           </div>
         </form>
       </Modal>
@@ -621,11 +739,9 @@ export default function Leads() {
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
-        onConfirm={handleDeleteConfirm}
+        onConfirm={handleDelete}
         title="Delete Lead"
-        message={`Are you sure you want to delete lead "${leadToDelete?.name}"?`}
-        confirmText="Delete Lead"
-        danger={true}
+        message={`Are you sure you want to delete lead "${leadToDelete?.name}"? This action cannot be undone.`}
       />
     </div>
   );

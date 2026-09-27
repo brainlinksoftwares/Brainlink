@@ -9,9 +9,13 @@ import {
   Phone,
   FileText,
   MapPin,
+  ChevronRight,
+  ShieldCheck,
+  Briefcase,
 } from 'lucide-react';
 import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
+import Drawer from '../../components/ui/Drawer';
+import StatCard from '../../components/ui/StatCard';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -23,7 +27,7 @@ export default function Companies() {
 
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState(null);
@@ -73,7 +77,7 @@ export default function Companies() {
       phone: '',
       notes: '',
     });
-    setModalOpen(true);
+    setDrawerOpen(true);
   };
 
   const handleOpenEdit = (comp) => {
@@ -91,7 +95,7 @@ export default function Companies() {
       phone: comp.phone || '',
       notes: comp.notes || '',
     });
-    setModalOpen(true);
+    setDrawerOpen(true);
   };
 
   const handleSave = async (e) => {
@@ -109,7 +113,7 @@ export default function Companies() {
         await createCompany(formData, userProfile?.email);
         toast.success(`Created company: ${formData.name}`);
       }
-      setModalOpen(false);
+      setDrawerOpen(false);
       await loadCompanies();
     } catch (err) {
       toast.error('Error saving company');
@@ -129,38 +133,47 @@ export default function Companies() {
     }
   };
 
+  // Metrics
+  const totalCompanies = companies.length;
+  const gstRegistered = companies.filter(c => Boolean(c.gstin)).length;
+  const techCompanies = companies.filter(c => (c.industry || '').toLowerCase().includes('tech')).length;
+
   const columns = [
     {
       key: 'name',
-      label: 'Company Name',
+      label: 'Corporate Account',
       sortable: true,
       render: (val, row) => (
-        <div>
-          <div className="font-bold text-slate-900 flex items-center gap-1.5">
-            <Building2 className="w-4 h-4 text-blue-600" />
-            <span>{val}</span>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+            <Building2 className="w-4 h-4" />
           </div>
-          {row.website && (
-            <a
-              href={row.website.startsWith('http') ? row.website : `https://${row.website}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Globe className="w-3 h-3" />
-              <span>{row.website}</span>
-            </a>
-          )}
+          <div className="min-w-0">
+            <div className="font-medium text-slate-900 dark:text-white truncate">{val}</div>
+            {row.website ? (
+              <a
+                href={row.website.startsWith('http') ? row.website : `https://${row.website}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-0.5 truncate"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Globe className="w-3 h-3 shrink-0" />
+                <span className="truncate">{row.website.replace(/^https?:\/\//, '')}</span>
+              </a>
+            ) : (
+              <span className="text-[11px] text-slate-400">No domain recorded</span>
+            )}
+          </div>
         </div>
       ),
     },
     {
       key: 'industry',
-      label: 'Industry',
+      label: 'Vertical',
       sortable: true,
       render: (val) => (
-        <span className="text-xs px-2 py-0.5 bg-slate-100 rounded text-slate-700 font-medium">
+        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
           {val || 'Technology'}
         </span>
       ),
@@ -169,42 +182,60 @@ export default function Companies() {
       key: 'taxDetails',
       label: 'GSTIN / PAN',
       render: (_, row) => (
-        <div className="text-xs space-y-0.5 font-mono text-slate-600">
-          <div>GST: {row.gstin || '—'}</div>
-          <div>PAN: {row.pan || '—'}</div>
+        <div className="text-xs space-y-0.5 font-mono text-slate-600 dark:text-slate-400">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-slate-400 font-sans font-medium">GST:</span>
+            <span className="font-medium text-slate-900 dark:text-slate-200">{row.gstin || 'Unregistered'}</span>
+          </div>
+          {row.pan && (
+            <div className="flex items-center gap-1 text-[11px] text-slate-500">
+              <span className="text-[10px] text-slate-400 font-sans">PAN:</span>
+              <span>{row.pan}</span>
+            </div>
+          )}
         </div>
       ),
     },
     {
       key: 'contact',
-      label: 'Contact Info',
+      label: 'Liaison & Email',
       render: (_, row) => (
-        <div className="text-xs space-y-0.5 text-slate-600">
-          <div className="font-medium text-slate-800">{row.primaryContact || '—'}</div>
-          {row.email && <div>{row.email}</div>}
+        <div className="text-xs space-y-0.5">
+          <div className="font-medium text-slate-800 dark:text-slate-200">{row.primaryContact || '—'}</div>
+          {row.email && (
+            <a
+              href={`mailto:${row.email}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-slate-500 dark:text-slate-400 hover:text-blue-600 truncate block transition-colors"
+            >
+              {row.email}
+            </a>
+          )}
         </div>
       ),
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: '',
       align: 'right',
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => handleOpenEdit(row)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+            title="Edit Company"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => {
               setCompanyToDelete(row);
               setDeleteConfirmOpen(true);
             }}
-            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors"
+            title="Delete Company"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       ),
@@ -213,138 +244,239 @@ export default function Companies() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
-            Client & Vendor Companies
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span>CRM</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-slate-900 dark:text-white font-medium">Companies</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
+            Corporate Accounts
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Registered organizations, corporate GSTIN accounts, and billing addresses
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Registered legal entities, Indian GST compliance IDs, and billing headquarters
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all"
+          className="st-btn-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
-          <span>Add Company</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span>New Company</span>
         </button>
       </div>
 
+      {/* KPI Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard
+          label="Corporate Accounts"
+          value={totalCompanies}
+          icon={Building2}
+          subtext="Indexed organizations"
+        />
+        <StatCard
+          label="GST Registered"
+          value={gstRegistered}
+          icon={ShieldCheck}
+          subtext="Tax-compliant invoicing"
+        />
+        <StatCard
+          label="Technology Sector"
+          value={techCompanies}
+          icon={Briefcase}
+          subtext="Core strategic segment"
+        />
+      </div>
+
+      {/* Main Table */}
       <DataTable
         columns={columns}
         data={companies}
         searchKey={['name', 'industry', 'gstin', 'pan', 'primaryContact']}
-        searchPlaceholder="Search by company, GSTIN, PAN, primary contact..."
+        searchPlaceholder="Search companies by legal name, GSTIN, PAN, or contact..."
         onRowClick={(comp) => handleOpenEdit(comp)}
         exportFileName="brainlink_companies"
         loading={loading}
-        emptyMessage="No companies recorded yet. Add corporate accounts."
+        emptyMessage="No corporate accounts recorded yet. Click 'New Company' to register an account."
       />
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editingCompany ? 'Edit Company' : 'New Company'}
-        maxWidth="max-w-2xl"
+      {/* Slide-over Drawer */}
+      <Drawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={editingCompany ? `Edit Company: ${formData.name}` : 'Register Corporate Account'}
+        subtitle="Manage tax identifiers, legal registration, and billing location"
+        size="md"
         footer={
           <>
             <button
               type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+              onClick={() => setDrawerOpen(false)}
+              className="st-btn-secondary px-3.5 py-1.5 text-xs"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
+              className="st-btn-primary px-4 py-1.5 text-xs shadow-sm"
             >
-              Save Company
+              {editingCompany ? 'Save Changes' : 'Register Account'}
             </button>
           </>
         }
       >
-        <form onSubmit={handleSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Company Legal Name *</label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Nova Health Systems Pvt Ltd"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Website URL</label>
-            <input
-              type="text"
-              value={formData.website}
-              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-              placeholder="https://novahealth.co"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">GSTIN</label>
-            <input
-              type="text"
-              value={formData.gstin}
-              onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
-              placeholder="29ABCDE1234F1Z5"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-mono"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">PAN</label>
-            <input
-              type="text"
-              value={formData.pan}
-              onChange={(e) => setFormData({ ...formData, pan: e.target.value.toUpperCase() })}
-              placeholder="ABCDE1234F"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-mono"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Primary Contact</label>
-            <input
-              type="text"
-              value={formData.primaryContact}
-              onChange={(e) => setFormData({ ...formData, primaryContact: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Official Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="block font-semibold text-slate-700 mb-1">Billing Address</label>
-            <textarea
-              rows={2}
-              value={formData.billingAddress}
-              onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Company Legal Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Apex Global Solutions Pvt Ltd"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Website URL
+              </label>
+              <input
+                type="text"
+                value={formData.website}
+                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                placeholder="https://apexglobal.in"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Industry Vertical
+              </label>
+              <select
+                value={formData.industry}
+                onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                className="st-select"
+              >
+                <option value="Technology">Technology & SaaS</option>
+                <option value="Healthcare">Healthcare & Biotech</option>
+                <option value="Fintech">Fintech & Banking</option>
+                <option value="E-Commerce">E-Commerce & Retail</option>
+                <option value="Manufacturing">Manufacturing & Industrial</option>
+                <option value="Consulting">Professional Services</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                GSTIN Number (15-character)
+              </label>
+              <input
+                type="text"
+                value={formData.gstin}
+                onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
+                placeholder="29ABCDE1234F1Z5"
+                className="st-input font-mono uppercase"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Corporate PAN
+              </label>
+              <input
+                type="text"
+                value={formData.pan}
+                onChange={(e) => setFormData({ ...formData, pan: e.target.value.toUpperCase() })}
+                placeholder="ABCDE1234F"
+                className="st-input font-mono uppercase"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Primary Contact Liaison
+              </label>
+              <input
+                type="text"
+                value={formData.primaryContact}
+                onChange={(e) => setFormData({ ...formData, primaryContact: e.target.value })}
+                placeholder="e.g. Ramesh Chandra"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Official Billing Email
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="accounts@apexglobal.in"
+                className="st-input"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+91 80 4123 4567"
+                className="st-input"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Registered Billing Address
+              </label>
+              <textarea
+                rows={2}
+                value={formData.billingAddress}
+                onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })}
+                placeholder="Full registered address for GST invoices..."
+                className="st-textarea"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Internal Account Notes
+              </label>
+              <textarea
+                rows={2}
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Special billing instructions, payment terms, or enterprise caveats..."
+                className="st-textarea"
+              />
+            </div>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
         title="Delete Company"
-        message={`Are you sure you want to delete "${companyToDelete?.name}"?`}
+        message={`Are you sure you want to delete corporate account "${companyToDelete?.name}"?`}
       />
     </div>
   );

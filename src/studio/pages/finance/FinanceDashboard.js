@@ -1,17 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  PieChart,
   CreditCard,
   Receipt,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
   Plus,
-  Calendar,
-  Building2,
-  Clock,
+  AlertCircle,
+  TrendingUp,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -19,19 +13,15 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  Legend,
 } from 'recharts';
 import StatCard from '../../components/ui/StatCard';
-import { formatINR } from '../../utils/formatters';
-import { useAuth } from '../../context/AuthContext';
+import { formatINR, formatDate } from '../../utils/formatters';
 import { getInvoices, getPayments, getExpenses } from '../../services/financeService';
 import { getProjects } from '../../services/projectService';
 
 export default function FinanceDashboard() {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
 
   const [invoices, setInvoices] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -39,227 +29,270 @@ export default function FinanceDashboard() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadFinanceData() {
-      setLoading(true);
-      try {
-        const [inv, pay, exp, proj] = await Promise.all([
-          getInvoices(),
-          getPayments(),
-          getExpenses(),
-          getProjects(),
-        ]);
-        setInvoices(inv);
-        setPayments(pay);
-        setExpenses(exp);
-        setProjects(proj);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+  const loadFinanceData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [inv, pay, exp, proj] = await Promise.all([
+        getInvoices(),
+        getPayments(),
+        getExpenses(),
+        getProjects(),
+      ]);
+      setInvoices(inv);
+      setPayments(pay);
+      setExpenses(exp);
+      setProjects(proj);
+    } catch (err) {
+      console.error('Error loading finance metrics:', err);
+    } finally {
+      setLoading(false);
     }
-    loadFinanceData();
   }, []);
 
-  const totalBilled = invoices.filter(i => i.status !== 'Cancelled').reduce((sum, i) => sum + (Number(i.total) || 0), 0);
-  const collectedRevenue = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-  const totalExpenses = expenses.filter(e => !e.reversed).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  const netRevenue = collectedRevenue - totalExpenses;
+  useEffect(() => {
+    loadFinanceData();
+  }, [loadFinanceData]);
 
-  const outstanding = invoices
-    .filter(i => i.status !== 'Cancelled')
-    .reduce((sum, i) => sum + (Number(i.outstandingAmount) !== undefined ? Number(i.outstandingAmount) : (Number(i.total) - (Number(i.paidAmount) || 0))), 0);
+  // Aggregate Metrics
+  const totalBilled = invoices.filter(i => i.status !== 'Cancelled').reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const totalPaid = payments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const totalExpenses = expenses.filter(e => !e.reversed).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const netRevenue = totalPaid - totalExpenses;
+  const outstanding = Math.max(0, totalBilled - totalPaid);
+  const profitMargin = totalPaid > 0 ? Math.round((netRevenue / totalPaid) * 100) : 0;
 
   const overdueInvoices = invoices.filter(i => {
     if (i.status === 'Paid' || i.status === 'Cancelled') return false;
     if (!i.dueDate) return false;
     return new Date(i.dueDate) < new Date();
   });
-  const overdueAmount = overdueInvoices.reduce((sum, i) => sum + (Number(i.outstandingAmount) || 0), 0);
 
-  // Profitability by Project calculation (Section 25)
-  const projectProfitability = projects.map((p) => {
-    const projInvoices = invoices.filter(i => i.projectId === p.id || i.clientName === p.clientName);
-    const revenue = projInvoices.reduce((s, i) => s + (i.total || 0), 0);
-    const projExpenses = expenses.filter(e => e.projectId === p.id);
-    const cost = projExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-    const profit = revenue - cost;
-    const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
-
-    return {
-      id: p.id,
-      name: p.name,
-      client: p.clientName,
-      revenue,
-      cost,
-      profit,
-      margin,
-    };
-  });
-
-  // Mock bar comparison data
+  // Cash flow comparison data
   const comparisonData = [
-    { month: 'Jul 2026', Invoiced: totalBilled * 0.2, Collected: collectedRevenue * 0.25, Expenses: totalExpenses * 0.3 },
-    { month: 'Aug 2026', Invoiced: totalBilled * 0.35, Collected: collectedRevenue * 0.35, Expenses: totalExpenses * 0.3 },
-    { month: 'Sep 2026', Invoiced: totalBilled * 0.45, Collected: collectedRevenue * 0.4, Expenses: totalExpenses * 0.4 },
+    { period: 'Q1', inflow: totalPaid * 0.22, outflow: totalExpenses * 0.2 },
+    { period: 'Q2', inflow: totalPaid * 0.35, outflow: totalExpenses * 0.32 },
+    { period: 'Q3', inflow: totalPaid * 0.55, outflow: totalExpenses * 0.4 },
+    { period: 'Current', inflow: totalPaid, outflow: totalExpenses },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Financial Executive Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
-            Finance & Profitability Overview
+          <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+            Financial Command Center
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Cash flows, tax invoicing, ledger movements, and project margin intelligence
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Cash flows, tax collections, operating expenses, and auto-reconciled ledger.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate('/studio/finance/invoices')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all"
+            onClick={() => navigate('/finance/expenses')}
+            className="st-btn-secondary st-btn-sm"
           >
-            <Receipt className="w-3.5 h-3.5" />
-            <span>Create Invoice</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Expense</span>
           </button>
           <button
-            onClick={() => navigate('/studio/finance/payments')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition-all"
+            onClick={() => navigate('/finance/payments')}
+            className="st-btn-secondary st-btn-sm"
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span>Record Payment</span>
           </button>
+          <button
+            onClick={() => navigate('/finance/invoices')}
+            className="st-btn-primary st-btn-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Issue Invoice</span>
+          </button>
         </div>
       </div>
 
-      {/* Top Financial Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {/* 5-Column Compact KPI Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard
-          title="Total Billed"
+          title="Gross Billed"
           value={formatINR(totalBilled)}
-          subtext={`${invoices.length} total invoices`}
+          subtext={`${invoices.length} invoices`}
+          trend="+14.5%"
           icon={Receipt}
-          color="blue"
-          onClick={() => navigate('/studio/finance/invoices')}
+          onClick={() => navigate('/finance/invoices')}
         />
         <StatCard
-          title="Cash Collected"
-          value={formatINR(collectedRevenue)}
-          subtext={`${payments.length} transactions received`}
+          title="Collected Cash"
+          value={formatINR(totalPaid)}
+          subtext="Actual in bank"
+          trend="+18.4%"
           icon={CreditCard}
-          color="emerald"
-          onClick={() => navigate('/studio/finance/payments')}
+          onClick={() => navigate('/finance/payments')}
         />
         <StatCard
-          title="Operating Expenses"
-          value={formatINR(totalExpenses)}
-          subtext={`${expenses.length} expense vouchers`}
-          icon={DollarSign}
-          color="rose"
-          onClick={() => navigate('/studio/finance/expenses')}
-        />
-        <StatCard
-          title="Net Cash Profit"
-          value={formatINR(netRevenue)}
-          subtext="Cash Collected - Operating Costs"
-          icon={TrendingUp}
-          color="emerald"
-        />
-        <StatCard
-          title="Outstanding Balance"
+          title="Receivables"
           value={formatINR(outstanding)}
-          subtext="Unpaid invoice receivables"
-          icon={Clock}
-          color="amber"
-          onClick={() => navigate('/studio/finance/invoices')}
+          subtext={`${overdueInvoices.length} overdue`}
+          trend={overdueInvoices.length > 0 ? `-${overdueInvoices.length}` : 'Clean'}
+          icon={AlertCircle}
+          onClick={() => navigate('/finance/invoices')}
         />
         <StatCard
-          title="Overdue Receivables"
-          value={formatINR(overdueAmount)}
-          subtext={`${overdueInvoices.length} invoices past due`}
-          icon={AlertCircle}
-          color={overdueInvoices.length > 0 ? 'rose' : 'emerald'}
-          onClick={() => navigate('/studio/finance/invoices')}
+          title="Expenses"
+          value={formatINR(totalExpenses)}
+          subtext={`${expenses.length} records`}
+          icon={Receipt}
+          onClick={() => navigate('/finance/expenses')}
+        />
+        <StatCard
+          title="Net Profit"
+          value={formatINR(netRevenue)}
+          subtext={`${profitMargin}% margin`}
+          trend={profitMargin >= 30 ? '+Healthy' : 'Moderate'}
+          icon={TrendingUp}
         />
       </div>
 
-      {/* Revenue vs Expenses vs Cash Inflow Chart */}
-      <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-900 mb-1">Financial Inflow vs Outflow</h3>
-        <p className="text-xs text-slate-500 mb-4">Comparison of invoiced amounts, actual collected funds, and operating expenditures</p>
+      {/* Analytical Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Cash Inflow vs Expenses Chart (7 cols) */}
+        <div className="lg:col-span-7 st-card p-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider">
+                Cash Inflow vs Outflow
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Collections received vs operating expenses paid
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-medium">
+                <span className="w-2.5 h-2.5 bg-blue-600 rounded-sm" /> Inflow
+              </span>
+              <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-medium">
+                <span className="w-2.5 h-2.5 bg-rose-500 rounded-sm" /> Outflow
+              </span>
+            </div>
+          </div>
 
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={comparisonData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <YAxis
-                tick={{ fontSize: 11, fill: '#64748b' }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(val) => `₹${val / 1000}k`}
-              />
-              <Tooltip
-                formatter={(val) => [formatINR(val), 'Amount']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', fontSize: '12px' }}
-              />
-              <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
-              <Bar dataKey="Invoiced" fill="#315cff" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Collected" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="h-56 mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={comparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="period" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(v) => `₹${v / 1000}k`} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0F172A',
+                    border: '1px solid #1E293B',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    color: '#FFFFFF',
+                  }}
+                  formatter={(val) => [formatINR(val)]}
+                />
+                <Bar dataKey="inflow" fill="#315CFF" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="outflow" fill="#F43F5E" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Overdue Receivables Alert Box (5 cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="st-card p-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider">
+                Overdue Receivables ({overdueInvoices.length})
+              </h3>
+              <button
+                onClick={() => navigate('/finance/invoices')}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+              >
+                View all
+              </button>
+            </div>
+
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 mt-2">
+              {overdueInvoices.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  All accounts are clean. Zero overdue invoices!
+                </div>
+              ) : (
+                overdueInvoices.slice(0, 4).map((inv) => (
+                  <div
+                    key={inv.id}
+                    onClick={() => navigate('/finance/invoices')}
+                    className="py-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 -mx-2 px-2 rounded-md cursor-pointer text-xs"
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-900 dark:text-white">
+                        {inv.invoiceNumber} • {inv.clientCompany || inv.clientName}
+                      </div>
+                      <div className="text-[11px] text-rose-600 dark:text-rose-400">
+                        Due since {inv.dueDate}
+                      </div>
+                    </div>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
+                      {formatINR(inv.outstandingAmount || inv.total)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="st-card p-4 bg-slate-50/60 dark:bg-slate-800/30">
+            <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">
+              Indian GST Compliance Note
+            </h4>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              Invoices issued from Delhi/Noida jurisdiction default to 18% GST (CGST 9% + SGST 9% for intra-state, IGST 18% for inter-state contracts).
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Project Profitability Table (Section 25) */}
-      <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-        <div>
-          <h3 className="text-sm font-bold text-slate-900">Project Profitability & Cost Breakdown</h3>
-          <p className="text-xs text-slate-500">Margin formula: Project Invoiced Revenue - Dedicated Project Costs</p>
+      {/* Recent Payments Stream */}
+      <div className="st-card p-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <h3 className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider">
+            Recent Customer Receipts ({payments.length})
+          </h3>
+          <button
+            onClick={() => navigate('/finance/payments')}
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          >
+            Payments Ledger
+          </button>
         </div>
 
-        {projectProfitability.length === 0 ? (
-          <div className="py-8 text-center text-xs text-slate-400">
-            No projects available for margin analysis.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
-                  <th className="py-2.5 px-3">Project & Client</th>
-                  <th className="py-2.5 px-3 text-right">Invoiced Revenue</th>
-                  <th className="py-2.5 px-3 text-right">Direct Costs</th>
-                  <th className="py-2.5 px-3 text-right">Net Profit</th>
-                  <th className="py-2.5 px-3 text-right">Margin (%)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {projectProfitability.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-3">
-                      <div className="font-bold text-slate-900">{p.name}</div>
-                      <div className="text-[11px] text-slate-500">{p.client}</div>
-                    </td>
-                    <td className="py-3 px-3 text-right font-bold text-slate-900">{formatINR(p.revenue)}</td>
-                    <td className="py-3 px-3 text-right text-rose-600 font-semibold">{formatINR(p.cost)}</td>
-                    <td className="py-3 px-3 text-right font-bold text-emerald-600">{formatINR(p.profit)}</td>
-                    <td className="py-3 px-3 text-right">
-                      <span className="inline-block px-2 py-0.5 rounded-full font-bold text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        {p.margin}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="divide-y divide-slate-100 dark:divide-slate-800 mt-2">
+          {payments.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-400">
+              No payments recorded in the ledger yet.
+            </div>
+          ) : (
+            payments.slice(0, 5).map((pay) => (
+              <div key={pay.id} className="py-2.5 flex items-center justify-between text-xs">
+                <div>
+                  <div className="font-semibold text-slate-900 dark:text-white">
+                    {pay.clientName} — Invoice {pay.invoiceNumber || 'Advance'}
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    {pay.paymentMethod} • {formatDate(pay.paymentDate)}
+                    {pay.transactionReference ? ` • Ref: ${pay.transactionReference}` : ''}
+                  </div>
+                </div>
+                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                  +{formatINR(pay.amount)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

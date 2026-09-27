@@ -40,111 +40,113 @@ export default function Topbar({ onMenuClick, onOpenCommandPalette, onOpenQuickA
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6">
+    <header className="h-13 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6">
       {/* Left: Mobile Toggle & Search trigger */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="lg:hidden text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100"
+          className="lg:hidden text-slate-500 hover:text-slate-800 dark:hover:text-white p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
           aria-label="Toggle navigation menu"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4 h-4" />
         </button>
 
         {/* Global Command Palette Trigger */}
         <button
           onClick={onOpenCommandPalette}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-400 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors w-48 sm:w-64"
+          className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-md transition-colors w-44 sm:w-60"
         >
           <Search className="w-3.5 h-3.5 text-slate-400" />
-          <span className="truncate">Search system...</span>
-          <kbd className="hidden sm:inline-block ml-auto text-[10px] font-semibold text-slate-500 bg-white border border-slate-200 rounded px-1.5 py-0.5 shadow-2xs">
+          <span className="truncate">Search anything...</span>
+          <kbd className="hidden sm:inline-block ml-auto text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.2 shadow-2xs">
             Ctrl K
           </kbd>
         </button>
       </div>
 
       {/* Right: Actions, Notifications, Role Switcher, Profile */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2">
         {/* Super Admin Role Switcher (Simulate other roles) */}
         {isSuperAdmin && (
-          <div className="hidden md:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs">
-            <Shield className="w-3.5 h-3.5 text-blue-600" />
-            <span className="text-[11px] font-medium text-slate-500">View As:</span>
+          <div className="hidden md:flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-md px-2.5 py-1 text-xs">
+            <Shield className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">View As:</span>
             <select
               value={simulatedRole || ROLES.SUPER_ADMIN}
               onChange={(e) => {
                 const val = e.target.value;
                 setSimulatedRole(val === ROLES.SUPER_ADMIN ? null : val);
               }}
-              className="bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
             >
-              <option value={ROLES.SUPER_ADMIN}>Super Admin (Full)</option>
-              <option value={ROLES.ADMIN}>Admin</option>
+              <option value={ROLES.SUPER_ADMIN}>Super Admin (All Access)</option>
               <option value={ROLES.SALES_MANAGER}>Sales Manager</option>
               <option value={ROLES.PROJECT_MANAGER}>Project Manager</option>
-              <option value={ROLES.FINANCE}>Finance</option>
-              <option value={ROLES.DEVELOPER}>Developer</option>
-              <option value={ROLES.CLIENT}>Client Portal</option>
+              <option value={ROLES.FINANCE}>Finance Executive</option>
+              <option value={ROLES.DEVELOPER}>Developer / Designer</option>
+              <option value={ROLES.CLIENT}>Client Portal View</option>
             </select>
           </div>
         )}
 
-        {/* Global Quick Action Button */}
+        {/* Quick Add Button */}
         {role !== ROLES.CLIENT && (
           <button
             onClick={onOpenQuickAction}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all"
+            className="st-btn-primary st-btn-sm"
+            title="Quick Action (Press N)"
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Quick Action</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">New</span>
           </button>
         )}
 
         {/* Notifications Dropdown */}
         <div className="relative">
           <button
-            onClick={() => setShowNotifMenu(!showNotifMenu)}
-            className="relative p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors"
-            aria-label="View notifications"
+            onClick={() => {
+              setShowNotifMenu(!showNotifMenu);
+              setShowUserMenu(false);
+            }}
+            className="relative p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            title="Notifications"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-slate-900" />
             )}
           </button>
 
           {showNotifMenu && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200/80 p-2 z-50">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-900">Notifications</span>
+            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-2 z-50 animate-fadeIn">
+              <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-900 dark:text-white">Notifications</span>
                 {unreadCount > 0 && (
-                  <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-semibold border border-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900">
                     {unreadCount} new
                   </span>
                 )}
               </div>
-              <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+
+              <div className="max-h-72 overflow-y-auto studio-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
                 {notifications.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-slate-400">
-                    No new notifications
+                  <div className="p-6 text-center text-xs text-slate-400">
+                    No recent notifications
                   </div>
                 ) : (
                   notifications.map((n) => (
                     <div
                       key={n.id}
                       onClick={() => handleMarkRead(n.id)}
-                      className={`p-3 text-xs cursor-pointer hover:bg-slate-50 transition-colors ${
-                        !n.read ? 'bg-blue-50/30' : ''
+                      className={`p-3 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors ${
+                        !n.read ? 'bg-blue-50/30 dark:bg-blue-950/15' : ''
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <span className="font-semibold text-slate-800">{n.title}</span>
-                        {!n.read && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0 mt-1" />
-                        )}
+                        <div className="font-medium text-slate-800 dark:text-slate-200">{n.title}</div>
+                        {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0 mt-1" />}
                       </div>
-                      <p className="text-slate-500 text-[11px] mt-1 leading-snug">{n.message}</p>
+                      <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5 line-clamp-2">{n.message}</p>
                     </div>
                   ))
                 )}
@@ -153,49 +155,55 @@ export default function Topbar({ onMenuClick, onOpenCommandPalette, onOpenQuickA
           )}
         </div>
 
-        {/* User Profile Menu */}
+        {/* User Profile Dropdown */}
         <div className="relative">
           <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            onClick={() => {
+              setShowUserMenu(!showUserMenu);
+              setShowNotifMenu(false);
+            }}
+            className="flex items-center gap-2 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+            <div className="w-7 h-7 rounded-full bg-blue-600/10 border border-blue-600/20 text-blue-600 dark:text-blue-400 font-semibold text-xs flex items-center justify-center">
               {userProfile?.displayName ? userProfile.displayName.charAt(0).toUpperCase() : 'A'}
             </div>
-            <span className="hidden md:inline-block text-xs font-semibold text-slate-700">
-              {userProfile?.displayName || userProfile?.email?.split('@')[0]}
-            </span>
           </button>
 
           {showUserMenu && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200/80 py-1.5 z-50 text-xs">
-              <div className="px-4 py-2 border-b border-slate-100">
-                <p className="font-bold text-slate-900 truncate">{userProfile?.displayName || 'User'}</p>
-                <p className="text-slate-400 text-[11px] truncate">{userProfile?.email}</p>
-                <div className="mt-1">
-                  <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
-                    {role}
-                  </span>
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-1.5 z-50">
+              <div className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-800">
+                <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                  {userProfile?.displayName || 'Aaditya Vishnoi'}
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                  {userProfile?.email || 'vishnoiaaditya29@gmail.com'}
+                </div>
+                <div className="mt-1 text-[10px] font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                  {role}
                 </div>
               </div>
 
-              <a
-                href="https://brainlink.in"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Visit Main Website</span>
-              </a>
+              <div className="py-1">
+                <a
+                  href="https://brainlink.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between px-3.5 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <span>Main Website</span>
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                </a>
+              </div>
 
-              <button
-                onClick={() => logout()}
-                className="w-full flex items-center gap-2 px-4 py-2 text-rose-600 hover:bg-rose-50 transition-colors"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Sign Out</span>
-              </button>
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-1">
+                <button
+                  onClick={logout}
+                  className="w-full flex items-center gap-2 px-3.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign out</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -9,9 +9,14 @@ import {
   FolderGit2,
   Building2,
   Users,
+  ChevronRight,
+  DollarSign,
+  Briefcase,
+  CheckCircle2,
 } from 'lucide-react';
 import Tabs from '../../components/ui/Tabs';
 import StatCard from '../../components/ui/StatCard';
+import StatusBadge from '../../components/ui/StatusBadge';
 import { formatINR, formatDate, exportToCSV } from '../../utils/formatters';
 import { useToast } from '../../context/ToastContext';
 import { getLeads } from '../../services/crmService';
@@ -64,10 +69,10 @@ export default function Reports() {
   }, []);
 
   const tabs = [
-    { id: 'sales', label: 'Sales Reports', icon: TrendingUp },
-    { id: 'finance', label: 'Financial Performance', icon: Receipt },
-    { id: 'projects', label: 'Project Health & Workload', icon: FolderGit2 },
-    { id: 'clients', label: 'Client Accounts & Revenue', icon: Building2 },
+    { id: 'sales', label: 'Sales & Pipeline', icon: TrendingUp },
+    { id: 'finance', label: 'Financial Telemetry', icon: Receipt },
+    { id: 'projects', label: 'Delivery Health', icon: FolderGit2 },
+    { id: 'clients', label: 'Corporate Accounts', icon: Building2 },
   ];
 
   // Sales calculations
@@ -93,58 +98,81 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
-            Business Intelligence & Reports
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span>Reports</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-slate-900 dark:text-white font-medium">Business Intelligence</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
+            Executive Intelligence & Analytics
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Section 42 reporting: automated multi-dimensional analytics for revenue, pipeline, and delivery margins
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Cross-module aggregated analytics for revenue, pipeline conversion, project velocity, and profit margins
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={activeTab === 'sales' ? handleExportSales : handleExportFinance}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export Report CSV</span>
-          </button>
-        </div>
+        <button
+          onClick={activeTab === 'sales' ? handleExportSales : handleExportFinance}
+          className="st-btn-secondary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs self-start sm:self-auto"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Export {activeTab === 'sales' ? 'Sales' : 'Financial'} CSV</span>
+        </button>
       </div>
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'sales' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard title="Total Deals Closed (Won)" value={formatINR(wonRevenue)} subtext={`${wonDeals.length} won contracts`} icon={TrendingUp} color="emerald" />
-            <StatCard title="Active Pipeline Volume" value={formatINR(totalPipeline)} subtext="Unclosed opportunities" icon={TrendingUp} color="blue" />
-            <StatCard title="Total Leads Generated" value={leads.length} subtext={`${leads.filter(l => l.status === 'Qualified').length} qualified`} icon={Users} color="indigo" />
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <StatCard
+              label="Closed Won Revenue"
+              value={formatINR(wonRevenue)}
+              icon={TrendingUp}
+              subtext={`${wonDeals.length} won contracts`}
+            />
+            <StatCard
+              label="Active Pipeline"
+              value={formatINR(totalPipeline)}
+              icon={DollarSign}
+              subtext="Unclosed commercial volume"
+            />
+            <StatCard
+              label="Lead Generation"
+              value={leads.length}
+              icon={Users}
+              subtext={`${leads.filter(l => l.status === 'Qualified').length} qualified prospects`}
+            />
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-900 mb-3">Deals Summary Register</h3>
+          <div className="st-card p-5">
+            <div className="border-b border-slate-200 dark:border-slate-800 pb-3 mb-3">
+              <h3 className="text-xs font-semibold text-slate-900 dark:text-white">
+                Commercial Pipeline Register
+              </h3>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
-                    <th className="py-2.5 px-3">Deal Name</th>
-                    <th className="py-2.5 px-3">Company</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
+                    <th className="py-2.5 px-3">Opportunity</th>
+                    <th className="py-2.5 px-3">Company Account</th>
                     <th className="py-2.5 px-3 text-right">Value (INR)</th>
                     <th className="py-2.5 px-3 text-right">Probability</th>
                     <th className="py-2.5 px-3">Stage</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
                   {deals.map((d) => (
-                    <tr key={d.id}>
-                      <td className="py-2.5 px-3 font-semibold text-slate-900">{d.name}</td>
-                      <td className="py-2.5 px-3 text-slate-600">{d.company}</td>
-                      <td className="py-2.5 px-3 text-right font-bold text-slate-900">{formatINR(d.value)}</td>
-                      <td className="py-2.5 px-3 text-right">{d.probability}%</td>
-                      <td className="py-2.5 px-3"><span className="font-semibold text-blue-600">{d.stage}</span></td>
+                    <tr key={d.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-2.5 px-3 font-sans font-medium text-slate-900 dark:text-white">{d.name}</td>
+                      <td className="py-2.5 px-3 font-sans text-slate-600 dark:text-slate-400">{d.company}</td>
+                      <td className="py-2.5 px-3 text-right font-medium text-slate-900 dark:text-white">{formatINR(d.value)}</td>
+                      <td className="py-2.5 px-3 text-right text-slate-600 dark:text-slate-400">{d.probability}%</td>
+                      <td className="py-2.5 px-3 font-sans"><StatusBadge status={d.stage} /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -155,37 +183,43 @@ export default function Reports() {
       )}
 
       {activeTab === 'finance' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <StatCard title="Total Invoiced" value={formatINR(totalInvoiced)} icon={Receipt} color="blue" />
-            <StatCard title="Cash Collected" value={formatINR(totalCollected)} icon={Receipt} color="emerald" />
-            <StatCard title="Operating Costs" value={formatINR(totalExpenses)} icon={Receipt} color="rose" />
-            <StatCard title="Net Cash Margin" value={formatINR(netRevenue)} icon={Receipt} color="emerald" />
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard label="Total Invoiced" value={formatINR(totalInvoiced)} icon={Receipt} subtext="Tax billings" />
+            <StatCard label="Cash Collected" value={formatINR(totalCollected)} icon={DollarSign} subtext="Reconciled settlements" />
+            <StatCard label="Operating Costs" value={formatINR(totalExpenses)} icon={Receipt} subtext="Approved vouchers" />
+            <StatCard label="Net Cash Margin" value={formatINR(netRevenue)} icon={TrendingUp} subtext="Cash flow profitability" />
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-900 mb-3">Billing & Tax Register</h3>
+          <div className="st-card p-5">
+            <div className="border-b border-slate-200 dark:border-slate-800 pb-3 mb-3">
+              <h3 className="text-xs font-semibold text-slate-900 dark:text-white">
+                Billing & GST Ledger Breakdown
+              </h3>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
                     <th className="py-2.5 px-3">Invoice No</th>
                     <th className="py-2.5 px-3">Client</th>
                     <th className="py-2.5 px-3 text-right">Taxable</th>
-                    <th className="py-2.5 px-3 text-right">Tax</th>
-                    <th className="py-2.5 px-3 text-right">Total</th>
+                    <th className="py-2.5 px-3 text-right">GST</th>
+                    <th className="py-2.5 px-3 text-right">Gross Total</th>
                     <th className="py-2.5 px-3 text-right">Balance</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
                   {invoices.map((inv) => (
-                    <tr key={inv.id}>
-                      <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{inv.invoiceNumber}</td>
-                      <td className="py-2.5 px-3 text-slate-600">{inv.clientCompany || inv.clientName}</td>
-                      <td className="py-2.5 px-3 text-right">{formatINR(inv.taxableAmount || inv.subtotal)}</td>
-                      <td className="py-2.5 px-3 text-right">{formatINR(inv.totalTax || 0)}</td>
-                      <td className="py-2.5 px-3 text-right font-bold text-slate-900">{formatINR(inv.total)}</td>
-                      <td className="py-2.5 px-3 text-right text-amber-600 font-semibold">{formatINR(inv.outstandingAmount !== undefined ? inv.outstandingAmount : 0)}</td>
+                    <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white">{inv.invoiceNumber}</td>
+                      <td className="py-2.5 px-3 font-sans text-slate-600 dark:text-slate-400">{inv.clientCompany || inv.clientName}</td>
+                      <td className="py-2.5 px-3 text-right text-slate-600 dark:text-slate-400">{formatINR(inv.taxableAmount || inv.subtotal)}</td>
+                      <td className="py-2.5 px-3 text-right text-slate-600 dark:text-slate-400">{formatINR(inv.totalTax || 0)}</td>
+                      <td className="py-2.5 px-3 text-right font-medium text-slate-900 dark:text-white">{formatINR(inv.total)}</td>
+                      <td className="py-2.5 px-3 text-right text-amber-600 dark:text-amber-400 font-medium">
+                        {formatINR(inv.outstandingAmount !== undefined ? inv.outstandingAmount : 0)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -196,27 +230,31 @@ export default function Reports() {
       )}
 
       {activeTab === 'projects' && (
-        <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold text-slate-900">Project Delivery Health</h3>
+        <div className="st-card p-5 space-y-4">
+          <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h3 className="text-xs font-semibold text-slate-900 dark:text-white">
+              Project Delivery Health & Progress
+            </h3>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
-                  <th className="py-2.5 px-3">Project</th>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
+                  <th className="py-2.5 px-3">Project Deliverable</th>
                   <th className="py-2.5 px-3">Client</th>
                   <th className="py-2.5 px-3 text-right">Budget</th>
                   <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3 text-right">Progress</th>
+                  <th className="py-2.5 px-3 text-right">Completion</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {projects.map((p) => (
-                  <tr key={p.id}>
-                    <td className="py-2.5 px-3 font-bold text-slate-900">{p.name}</td>
-                    <td className="py-2.5 px-3 text-slate-600">{p.clientName}</td>
-                    <td className="py-2.5 px-3 text-right font-bold text-slate-900">{formatINR(p.budget)}</td>
-                    <td className="py-2.5 px-3"><span className="font-semibold text-blue-600">{p.status}</span></td>
-                    <td className="py-2.5 px-3 text-right font-semibold">{p.progress || 0}%</td>
+                  <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white">{p.name}</td>
+                    <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">{p.clientName}</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-900 dark:text-white">{formatINR(p.budget)}</td>
+                    <td className="py-2.5 px-3"><StatusBadge status={p.status} /></td>
+                    <td className="py-2.5 px-3 text-right font-mono font-medium text-blue-600 dark:text-blue-400">{p.progress || 0}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -226,25 +264,29 @@ export default function Reports() {
       )}
 
       {activeTab === 'clients' && (
-        <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold text-slate-900">Client Revenue Concentration</h3>
+        <div className="st-card p-5 space-y-4">
+          <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h3 className="text-xs font-semibold text-slate-900 dark:text-white">
+              Corporate Account Concentration
+            </h3>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
                   <th className="py-2.5 px-3">Client Organization</th>
-                  <th className="py-2.5 px-3">Contact</th>
-                  <th className="py-2.5 px-3">GSTIN</th>
-                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Liaison Contact</th>
+                  <th className="py-2.5 px-3 font-mono">GSTIN</th>
+                  <th className="py-2.5 px-3">Account Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {clients.map((c) => (
-                  <tr key={c.id}>
-                    <td className="py-2.5 px-3 font-bold text-slate-900">{c.companyName}</td>
-                    <td className="py-2.5 px-3 text-slate-600">{c.primaryContact || '—'}</td>
-                    <td className="py-2.5 px-3 font-mono">{c.gstin || '—'}</td>
-                    <td className="py-2.5 px-3"><span className="font-semibold text-emerald-600">{c.status}</span></td>
+                  <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white">{c.companyName}</td>
+                    <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">{c.primaryContact || '—'}</td>
+                    <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-slate-400">{c.gstin || 'Unregistered'}</td>
+                    <td className="py-2.5 px-3"><StatusBadge status={c.status} /></td>
                   </tr>
                 ))}
               </tbody>

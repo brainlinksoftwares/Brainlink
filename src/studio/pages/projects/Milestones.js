@@ -7,11 +7,15 @@ import {
   Calendar,
   CheckCircle2,
   Receipt,
-  Sparkles,
+  ChevronRight,
+  DollarSign,
+  Clock,
+  Target,
 } from 'lucide-react';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
-import Modal from '../../components/ui/Modal';
+import Drawer from '../../components/ui/Drawer';
+import StatCard from '../../components/ui/StatCard';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { formatINR, formatDate } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
@@ -25,7 +29,7 @@ export default function Milestones() {
   const [milestones, setMilestones] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [milestoneToDelete, setMilestoneToDelete] = useState(null);
@@ -73,7 +77,7 @@ export default function Milestones() {
       completionPercentage: 0,
       status: 'In Progress',
     });
-    setModalOpen(true);
+    setDrawerOpen(true);
   };
 
   const handleProjectSelect = (projId) => {
@@ -113,7 +117,7 @@ export default function Milestones() {
         await createMilestone(formData, userProfile?.email);
         toast.success(`Created milestone: ${formData.name}`);
       }
-      setModalOpen(false);
+      setDrawerOpen(false);
       await loadData();
     } catch (err) {
       toast.error('Error saving milestone');
@@ -133,40 +137,57 @@ export default function Milestones() {
     }
   };
 
+  // Metrics
+  const totalMilestones = milestones.length;
+  const linkedVolume = milestones.reduce((sum, m) => sum + (Number(m.billingAmount) || 0), 0);
+  const completedCount = milestones.filter(m => m.status === 'Completed' || m.completionPercentage === 100).length;
+  const inProgressCount = milestones.filter(m => m.status === 'In Progress').length;
+
   const columns = [
     {
       key: 'name',
-      label: 'Milestone & Project',
+      label: 'Deliverable Milestone & Project',
       sortable: true,
       render: (val, row) => (
-        <div>
-          <div className="font-bold text-slate-900">{val}</div>
-          <div className="text-xs text-slate-500 mt-0.5">{row.projectName || 'General Engineering'}</div>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+            <Layers className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="font-medium text-slate-900 dark:text-white truncate">{val}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+              {row.projectName || 'General Engineering'}
+            </div>
+          </div>
         </div>
       ),
     },
     {
       key: 'paymentPercentage',
-      label: 'Linked Billing',
+      label: 'Linked Payout',
       sortable: true,
       align: 'right',
       render: (val, row) => (
-        <div>
-          <div className="font-bold text-slate-900">{formatINR(row.billingAmount)}</div>
-          <div className="text-[10px] text-blue-600 font-semibold">{val}% milestone payout</div>
+        <div className="text-right">
+          <div className="font-medium text-slate-900 dark:text-white font-mono text-xs">
+            {formatINR(row.billingAmount)}
+          </div>
+          <div className="text-[11px] text-blue-600 dark:text-blue-400 font-mono">
+            {val}% milestone tranche
+          </div>
         </div>
       ),
     },
     {
       key: 'completionPercentage',
-      label: 'Completion',
+      label: 'Progress',
       sortable: true,
       render: (val = 0) => (
-        <div className="w-24 space-y-1">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700">
+        <div className="w-24">
+          <div className="flex justify-between text-[11px] mb-1 text-slate-600 dark:text-slate-400 font-mono">
             <span>{val}%</span>
           </div>
-          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full ${val === 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
               style={{ width: `${val}%` }}
@@ -177,12 +198,12 @@ export default function Milestones() {
     },
     {
       key: 'dueDate',
-      label: 'Due Date',
+      label: 'Milestone Deadline',
       sortable: true,
       render: (val) => (
-        <span className="text-xs text-slate-600 flex items-center gap-1">
+        <span className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5 font-mono">
           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          {formatDate(val)}
+          <span>{formatDate(val)}</span>
         </span>
       ),
     },
@@ -194,28 +215,30 @@ export default function Milestones() {
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: '',
       align: 'right',
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => {
               setEditingMilestone(row);
               setFormData(row);
-              setModalOpen(true);
+              setDrawerOpen(true);
             }}
-            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+            title="Edit Milestone"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => {
               setMilestoneToDelete(row);
               setDeleteConfirmOpen(true);
             }}
-            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors"
+            title="Delete Milestone"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       ),
@@ -224,151 +247,226 @@ export default function Milestones() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
-            Project Milestones & Billing
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span>Projects</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-slate-900 dark:text-white font-medium">Milestones</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
+            Milestones & Deliverable Tranches
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Standard milestone-linked billing schedules (e.g. 30% Architecture, 40% Core, 30% UAT)
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Phase gates, client sign-off criteria, and contract-linked billing milestones
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all"
+          className="st-btn-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>New Milestone</span>
         </button>
       </div>
 
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          label="Total Milestones"
+          value={totalMilestones}
+          icon={Layers}
+          subtext="Indexed contract gates"
+        />
+        <StatCard
+          label="Linked Payout Volume"
+          value={formatINR(linkedVolume)}
+          icon={DollarSign}
+          subtext="Total contract value tied"
+        />
+        <StatCard
+          label="In Progress"
+          value={inProgressCount}
+          icon={Clock}
+          subtext="Active delivery phases"
+        />
+        <StatCard
+          label="Achieved Sign-offs"
+          value={completedCount}
+          icon={CheckCircle2}
+          subtext="Verified & eligible for billing"
+        />
+      </div>
+
+      {/* Main Table */}
       <DataTable
         columns={columns}
         data={milestones}
         searchKey={['name', 'projectName']}
         searchPlaceholder="Search milestones by title, project..."
         filterKey="status"
-        filterOptions={['Pending', 'In Progress', 'Completed'].map(s => ({ label: s, value: s }))}
+        filterOptions={['In Progress', 'Completed', 'Delayed', 'On Hold'].map(s => ({ label: s, value: s }))}
         onRowClick={(m) => {
           setEditingMilestone(m);
           setFormData(m);
-          setModalOpen(true);
+          setDrawerOpen(true);
         }}
         exportFileName="brainlink_milestones"
         loading={loading}
-        emptyMessage="No project milestones configured."
+        emptyMessage="No project milestones recorded yet. Click 'New Milestone' to define phase gates."
       />
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editingMilestone ? 'Edit Milestone' : 'Add Project Milestone'}
+      {/* Slide-over Drawer */}
+      <Drawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={editingMilestone ? `Edit Milestone: ${formData.name}` : 'Create Project Milestone'}
+        subtitle="Establish deliverable scope, billing percentage, and target sign-off date"
+        size="md"
         footer={
           <>
             <button
               type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+              onClick={() => setDrawerOpen(false)}
+              className="st-btn-secondary px-3.5 py-1.5 text-xs"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
+              className="st-btn-primary px-4 py-1.5 text-xs shadow-sm"
             >
-              Save Milestone
+              {editingMilestone ? 'Save Changes' : 'Create Milestone'}
             </button>
           </>
         }
       >
-        <form onSubmit={handleSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div className="sm:col-span-2">
-            <label className="block font-semibold text-slate-700 mb-1">Milestone Name *</label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Phase 2: Video Consultation & EHR Module"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Select Project</label>
-            <select
-              value={formData.projectId}
-              onChange={(e) => handleProjectSelect(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-            >
-              <option value="">Select Project</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Due Date</label>
-            <input
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Payment Payout (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={formData.paymentPercentage}
-              onChange={(e) => handlePercentageChange(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Billing Amount (INR ₹)</label>
-            <input
-              type="number"
-              value={formData.billingAmount}
-              onChange={(e) => setFormData({ ...formData, billingAmount: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-            >
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Completion Percentage (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={formData.completionPercentage}
-              onChange={(e) => setFormData({ ...formData, completionPercentage: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Milestone Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Phase 2: Core Engine & REST API Integration"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Associated Project
+              </label>
+              <select
+                value={formData.projectId}
+                onChange={(e) => handleProjectSelect(e.target.value)}
+                className="st-select"
+              >
+                <option value="">Select Project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Target Sign-off Deadline
+              </label>
+              <input
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Payout Tranche ({formData.paymentPercentage}%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={formData.paymentPercentage}
+                onChange={(e) => handlePercentageChange(e.target.value)}
+                className="st-input font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Calculated Billing Value (INR ₹)
+              </label>
+              <input
+                type="number"
+                value={formData.billingAmount}
+                onChange={(e) => setFormData({ ...formData, billingAmount: Number(e.target.value) })}
+                className="st-input font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Execution Progress ({formData.completionPercentage}%)
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={formData.completionPercentage}
+                onChange={(e) => setFormData({ ...formData, completionPercentage: Number(e.target.value) })}
+                className="w-full mt-2 accent-blue-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Gate Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="st-select"
+              >
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed & Verified</option>
+                <option value="Delayed">Delayed / Blocked</option>
+                <option value="On Hold">On Hold</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Scope Checklist & Sign-off Criteria
+              </label>
+              <textarea
+                rows={3}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Key technical criteria required for client sign-off..."
+                className="st-textarea"
+              />
+            </div>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
         title="Delete Milestone"
-        message="Are you sure you want to delete this project milestone?"
+        message="Are you sure you want to delete this deliverable milestone?"
       />
     </div>
   );

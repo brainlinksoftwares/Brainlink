@@ -7,9 +7,12 @@ import {
   MessageSquare,
   Sparkles,
   Filter,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react';
 import ActivityTimeline from '../../components/common/ActivityTimeline';
-import Modal from '../../components/ui/Modal';
+import Drawer from '../../components/ui/Drawer';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { getActivities, logActivity } from '../../services/crmService';
@@ -20,7 +23,7 @@ export default function Activities() {
 
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState('ALL');
 
   const [formData, setFormData] = useState({
@@ -60,7 +63,7 @@ export default function Activities() {
         userEmail: userProfile?.displayName || userProfile?.email,
       });
       toast.success('Activity logged to timeline');
-      setModalOpen(false);
+      setDrawerOpen(false);
       setFormData({
         type: 'Call',
         title: '',
@@ -79,125 +82,163 @@ export default function Activities() {
     return String(act.type).toLowerCase() === typeFilter.toLowerCase();
   });
 
+  const filterOptions = [
+    { id: 'ALL', label: 'All Events' },
+    { id: 'Call', label: 'Calls' },
+    { id: 'Email', label: 'Emails' },
+    { id: 'Meeting', label: 'Meetings' },
+    { id: 'Deal', label: 'Deals' },
+    { id: 'Invoice', label: 'Invoices' },
+    { id: 'Project', label: 'Projects' },
+  ];
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
-            Activities & Timeline
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span>CRM</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-slate-900 dark:text-white font-medium">Activities</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
+            Audit Feed & Interactions
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Chronological audit feed of client interactions, calls, emails, and milestones
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Real-time chronological timeline of client touchpoints, calls, negotiations, and system events
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Filter */}
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-2xs focus:outline-none"
-          >
-            <option value="ALL">All Types</option>
-            <option value="Call">Phone Calls</option>
-            <option value="Email">Emails</option>
-            <option value="Meeting">Meetings</option>
-            <option value="Deal">Deals</option>
-            <option value="Invoice">Invoices</option>
-            <option value="Project">Projects</option>
-          </select>
-
-          <button
-            onClick={() => setModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Log Activity</span>
-          </button>
-        </div>
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="st-btn-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs self-start sm:self-auto"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Log Activity</span>
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200/80 p-6 shadow-sm">
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+        {filterOptions.map((opt) => (
+          <button
+            key={opt.id}
+            onClick={() => setTypeFilter(opt.id)}
+            className={`px-3 py-1 text-xs rounded-md font-medium whitespace-nowrap transition-colors ${
+              typeFilter === opt.id
+                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Timeline Container */}
+      <div className="st-card p-5">
         {loading ? (
-          <div className="py-12 text-center text-xs text-slate-400">Loading timeline...</div>
+          <div className="py-16 text-center">
+            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs text-slate-400">Loading audit feed...</p>
+          </div>
+        ) : filteredActivities.length === 0 ? (
+          <div className="py-16 text-center text-slate-400">
+            <Clock className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-700" />
+            <p className="text-xs font-medium">No activity records found matching filter.</p>
+          </div>
         ) : (
           <ActivityTimeline activities={filteredActivities} />
         )}
       </div>
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+      {/* Slide-over Drawer for Log Activity */}
+      <Drawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
         title="Log Business Activity"
-        subtitle="Record notes, calls, follow-up touchpoints, or client emails"
+        subtitle="Record touchpoints, executive phone calls, client emails, or internal notes"
+        size="md"
         footer={
           <>
             <button
               type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+              onClick={() => setDrawerOpen(false)}
+              className="st-btn-secondary px-3.5 py-1.5 text-xs"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
+              className="st-btn-primary px-4 py-1.5 text-xs shadow-sm"
             >
-              Log to Feed
+              Save Activity
             </button>
           </>
         }
       >
-        <form onSubmit={handleSave} className="space-y-4 text-xs">
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Interaction Type</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Touchpoint Channel
+              </label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
+                className="st-select"
               >
                 <option value="Call">Phone Call</option>
-                <option value="Meeting">Meeting</option>
+                <option value="Meeting">Formal Meeting</option>
                 <option value="Email">Email Sent</option>
                 <option value="Note">Internal Note</option>
               </select>
             </div>
+
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Associated Entity</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Associated Entity / Client
+              </label>
               <input
                 type="text"
                 value={formData.entityName}
                 onChange={(e) => setFormData({ ...formData, entityName: e.target.value })}
-                placeholder="e.g. Zenith Tech or Rohan"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
+                placeholder="e.g. Nexus Tech Ltd or Vikram"
+                className="st-input"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Activity Title *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g. Architecture review & SLA scoping call"
+                className="st-input"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Summary, Objections & Next Action
+              </label>
+              <textarea
+                rows={4}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Key meeting takeaways, technical decisions, budget confirmation, or follow-up due date..."
+                className="st-textarea"
               />
             </div>
           </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Activity Title *</label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g. Discovery call regarding cloud migration roadmap"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Summary & Next Steps</label>
-            <textarea
-              rows={3}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Key decisions, client questions, deliverables agreed upon..."
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
         </form>
-      </Modal>
+      </Drawer>
     </div>
   );
 }

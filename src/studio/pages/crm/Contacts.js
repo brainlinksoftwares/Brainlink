@@ -7,11 +7,14 @@ import {
   Mail,
   Phone,
   Building2,
+  UserCheck,
+  Shield,
   Briefcase,
-  Tag,
+  ChevronRight,
 } from 'lucide-react';
 import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
+import Drawer from '../../components/ui/Drawer';
+import StatCard from '../../components/ui/StatCard';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -23,7 +26,7 @@ export default function Contacts() {
 
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
@@ -69,7 +72,7 @@ export default function Contacts() {
       notes: '',
       tags: '',
     });
-    setModalOpen(true);
+    setDrawerOpen(true);
   };
 
   const handleOpenEdit = (c) => {
@@ -85,7 +88,7 @@ export default function Contacts() {
       notes: c.notes || '',
       tags: Array.isArray(c.tags) ? c.tags.join(', ') : c.tags || '',
     });
-    setModalOpen(true);
+    setDrawerOpen(true);
   };
 
   const handleSave = async (e) => {
@@ -108,7 +111,7 @@ export default function Contacts() {
         await createContact(payload, userProfile?.email);
         toast.success(`Created contact: ${formData.name}`);
       }
-      setModalOpen(false);
+      setDrawerOpen(false);
       await loadContacts();
     } catch (err) {
       toast.error('Error saving contact');
@@ -128,79 +131,107 @@ export default function Contacts() {
     }
   };
 
+  // Metrics
+  const totalContacts = contacts.length;
+  const decisionMakers = contacts.filter(c => c.relationship === 'Decision Maker').length;
+  const uniqueCompanies = new Set(contacts.map(c => c.company).filter(Boolean)).size;
+  const technicalChampions = contacts.filter(c => c.relationship === 'Technical Champion').length;
+
   const columns = [
     {
       key: 'name',
-      label: 'Name & Designation',
+      label: 'Stakeholder',
       sortable: true,
       render: (val, row) => (
-        <div>
-          <div className="font-bold text-slate-900">{val}</div>
-          <div className="text-xs text-slate-500">{row.designation || 'Executive'}</div>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-700 dark:text-slate-300 shrink-0">
+            {val ? val.charAt(0).toUpperCase() : 'U'}
+          </div>
+          <div className="min-w-0">
+            <div className="font-medium text-slate-900 dark:text-white truncate">{val}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{row.designation || 'Executive'}</div>
+          </div>
         </div>
       ),
     },
     {
       key: 'company',
-      label: 'Company',
+      label: 'Organization',
       sortable: true,
       render: (val) => (
-        <span className="text-xs text-slate-700 flex items-center gap-1.5 font-medium">
-          <Building2 className="w-3.5 h-3.5 text-slate-400" />
-          {val || 'Independent'}
+        <span className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1.5 font-medium">
+          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="truncate">{val || 'Independent'}</span>
         </span>
       ),
     },
     {
       key: 'contact',
-      label: 'Contact Info',
+      label: 'Direct Contact',
       render: (_, row) => (
-        <div className="text-xs space-y-0.5">
+        <div className="text-xs space-y-1">
           {row.email && (
-            <div className="text-slate-600 flex items-center gap-1">
-              <Mail className="w-3 h-3 text-slate-400" />
-              <span>{row.email}</span>
-            </div>
+            <a
+              href={`mailto:${row.email}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-slate-600 dark:text-slate-400 hover:text-blue-600 flex items-center gap-1.5 truncate max-w-xs transition-colors"
+            >
+              <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="truncate">{row.email}</span>
+            </a>
           )}
           {row.phone && (
-            <div className="text-slate-600 flex items-center gap-1">
-              <Phone className="w-3 h-3 text-slate-400" />
+            <a
+              href={`tel:${row.phone}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-slate-600 dark:text-slate-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors"
+            >
+              <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span>{row.phone}</span>
-            </div>
+            </a>
           )}
         </div>
       ),
     },
     {
       key: 'relationship',
-      label: 'Relationship',
+      label: 'Influence & Role',
       sortable: true,
-      render: (val) => (
-        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-semibold">
-          {val || 'General'}
-        </span>
-      ),
+      render: (val) => {
+        let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+        if (val === 'Decision Maker') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
+        if (val === 'Technical Champion') badgeColor = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800';
+        if (val === 'Procurement') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
+
+        return (
+          <span className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border font-medium ${badgeColor}`}>
+            {val || 'General'}
+          </span>
+        );
+      },
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: '',
       align: 'right',
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => handleOpenEdit(row)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+            title="Edit Contact"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => {
               setContactToDelete(row);
               setDeleteConfirmOpen(true);
             }}
-            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors"
+            title="Delete Contact"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       ),
@@ -209,138 +240,229 @@ export default function Contacts() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
-            Business Contacts
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span>CRM</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-slate-900 dark:text-white font-medium">Contacts</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
+            Stakeholder Directory
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Directory of client stakeholders, executives, and technical point-of-contacts
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Key executives, technical champions, and procurement leads across your accounts
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all"
+          className="st-btn-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
-          <span>Add Contact</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span>New Contact</span>
         </button>
       </div>
 
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          label="Total Contacts"
+          value={totalContacts}
+          icon={Users}
+          subtext="Indexed stakeholders"
+        />
+        <StatCard
+          label="Decision Makers"
+          value={decisionMakers}
+          icon={Shield}
+          subtext="Primary sign-off authority"
+        />
+        <StatCard
+          label="Associated Companies"
+          value={uniqueCompanies}
+          icon={Building2}
+          subtext="Corporate client accounts"
+        />
+        <StatCard
+          label="Tech Champions"
+          value={technicalChampions}
+          icon={UserCheck}
+          subtext="Internal project advocates"
+        />
+      </div>
+
+      {/* Main Table */}
       <DataTable
         columns={columns}
         data={contacts}
         searchKey={['name', 'email', 'company', 'designation']}
-        searchPlaceholder="Search contacts by name, email, company..."
+        searchPlaceholder="Search stakeholders by name, email, company, or designation..."
         onRowClick={(c) => handleOpenEdit(c)}
         exportFileName="brainlink_contacts"
         loading={loading}
-        emptyMessage="No contacts recorded yet. Add your primary business contacts."
+        emptyMessage="No stakeholders recorded yet. Click 'New Contact' to create your first entry."
       />
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editingContact ? 'Edit Contact' : 'New Contact'}
+      {/* Slide-over Drawer for Contact Form */}
+      <Drawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={editingContact ? `Edit Contact: ${formData.name}` : 'New Stakeholder Contact'}
+        subtitle="Manage stakeholder coordinates, influence category, and relationship details"
+        size="md"
         footer={
           <>
             <button
               type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+              onClick={() => setDrawerOpen(false)}
+              className="st-btn-secondary px-3.5 py-1.5 text-xs"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
+              className="st-btn-primary px-4 py-1.5 text-xs shadow-sm"
             >
-              Save Contact
+              {editingContact ? 'Save Changes' : 'Create Contact'}
             </button>
           </>
         }
       >
-        <form onSubmit={handleSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Full Name *</label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Designation</label>
-            <input
-              type="text"
-              value={formData.designation}
-              onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-              placeholder="e.g. Chief Technology Officer"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Company</label>
-            <input
-              type="text"
-              value={formData.company}
-              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Relationship</label>
-            <select
-              value={formData.relationship}
-              onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-            >
-              <option value="Decision Maker">Decision Maker</option>
-              <option value="Technical Champion">Technical Champion</option>
-              <option value="Procurement">Procurement</option>
-              <option value="End User">End User</option>
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Phone</label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="block font-semibold text-slate-700 mb-1">Notes</label>
-            <textarea
-              rows={2}
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Vikram Malhotra"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Designation / Title
+              </label>
+              <input
+                type="text"
+                value={formData.designation}
+                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                placeholder="e.g. Chief Technology Officer"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Associated Company
+              </label>
+              <input
+                type="text"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                placeholder="e.g. Nexus Tech Ltd"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Direct Email
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="vikram@nexustech.io"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+91 98765 43210"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                WhatsApp Number
+              </label>
+              <input
+                type="tel"
+                value={formData.whatsapp}
+                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                placeholder="+91 98765 43210"
+                className="st-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Relationship Role
+              </label>
+              <select
+                value={formData.relationship}
+                onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
+                className="st-select"
+              >
+                <option value="Decision Maker">Decision Maker (C-Level / VP)</option>
+                <option value="Technical Champion">Technical Champion (Lead Eng / Architect)</option>
+                <option value="Procurement">Procurement & Finance</option>
+                <option value="End User">End User / Operational Lead</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Tags (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={formData.tags}
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                placeholder="Enterprise, VIP, Cloud Transformation"
+                className="st-input"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Executive Notes & Preferences
+              </label>
+              <textarea
+                rows={3}
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Key drivers, preferred communication channels, background..."
+                className="st-textarea"
+              />
+            </div>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
         title="Delete Contact"
-        message={`Are you sure you want to delete contact "${contactToDelete?.name}"?`}
+        message={`Are you sure you want to delete stakeholder "${contactToDelete?.name}"? This action cannot be undone.`}
       />
     </div>
   );

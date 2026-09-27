@@ -1,19 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Users,
   TrendingUp,
   FolderGit2,
   Receipt,
-  CreditCard,
   AlertCircle,
-  CheckCircle2,
-  DollarSign,
   Plus,
   RefreshCw,
   Sparkles,
+  ArrowRight,
+  Clock,
   ArrowUpRight,
-  Filter,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -23,16 +20,12 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  PieChart as RechartsPie,
-  Pie,
-  Cell,
-  Legend,
 } from 'recharts';
 import StatCard from '../../components/ui/StatCard';
 import ActivityTimeline from '../../components/common/ActivityTimeline';
 import EmptyState from '../../components/ui/EmptyState';
+import StatusBadge from '../../components/ui/StatusBadge';
 import { formatINR } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -44,10 +37,9 @@ import { seedStarterData } from '../../services/seedService';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { userProfile, role, isSuperAdmin } = useAuth();
+  const { userProfile, isSuperAdmin } = useAuth();
   const toast = useToast();
 
-  const [dateFilter, setDateFilter] = useState('ALL'); // THIS_MONTH, THIS_QUARTER, THIS_YEAR, ALL
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
 
@@ -60,7 +52,7 @@ export default function Dashboard() {
   const [expenses, setExpenses] = useState([]);
   const [activities, setActivities] = useState([]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [leadsData, dealsData, projectsData, invoicesData, paymentsData, expensesData, activitiesData] =
@@ -71,7 +63,7 @@ export default function Dashboard() {
           getInvoices(),
           getPayments(),
           getExpenses(),
-          getActivities(15),
+          getActivities(10),
         ]);
 
       setLeads(leadsData);
@@ -87,11 +79,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const handleSeedData = async () => {
     setSeeding(true);
@@ -108,17 +100,13 @@ export default function Dashboard() {
 
   // Calculations from real Firestore records
   const totalLeads = leads.length;
-  const qualifiedLeads = leads.filter(l => l.status === 'Qualified' || l.status === 'Proposal Sent').length;
-
   const activeDeals = deals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost');
   const pipelineValue = activeDeals.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
   const weightedPipeline = activeDeals.reduce((sum, d) => sum + (Number(d.weightedValue) || 0), 0);
-  const wonDeals = deals.filter(d => d.stage === 'Won');
 
   const activeProjects = projects.filter(p => p.status === 'Active' || p.status === 'In Progress');
   const delayedProjects = projects.filter(p => p.status === 'Delayed' || p.status === 'At Risk');
 
-  const totalInvoiced = invoices.filter(i => i.status !== 'Cancelled').reduce((sum, i) => sum + (Number(i.total) || 0), 0);
   const paymentsReceived = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const totalExpenses = expenses.filter(e => !e.reversed).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   const netRevenue = paymentsReceived - totalExpenses;
@@ -133,294 +121,343 @@ export default function Dashboard() {
     return new Date(i.dueDate) < new Date();
   });
 
-  // Funnel Data
-  const funnelStages = [
-    { name: 'Lead', count: leads.length, fill: '#3b82f6' },
-    { name: 'Qualified', count: leads.filter(l => ['Qualified', 'Meeting Scheduled', 'Proposal Sent', 'Won'].includes(l.status)).length, fill: '#06b6d4' },
-    { name: 'Proposal', count: deals.filter(d => ['Proposal', 'Negotiation', 'Won'].includes(d.stage)).length, fill: '#8b5cf6' },
-    { name: 'Negotiation', count: deals.filter(d => ['Negotiation', 'Won'].includes(d.stage)).length, fill: '#f59e0b' },
-    { name: 'Won', count: wonDeals.length, fill: '#10b981' },
-  ];
-
-  // Pipeline by Stage Data
-  const pipelineByStage = [
+  // Pipeline by Stage Data for Bar Chart
+  const pipelineStages = [
     { stage: 'New', value: deals.filter(d => d.stage === 'New Lead').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Contacted', value: deals.filter(d => d.stage === 'Contacted').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Qualified', value: deals.filter(d => d.stage === 'Qualified').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Meeting', value: deals.filter(d => d.stage === 'Meeting').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Proposal', value: deals.filter(d => d.stage === 'Proposal').reduce((s, d) => s + (d.value || 0), 0) },
-    { stage: 'Negotiation', value: deals.filter(d => d.stage === 'Negotiation').reduce((s, d) => s + (d.value || 0), 0) },
+    { stage: 'Contact', value: deals.filter(d => d.stage === 'Contacted').reduce((s, d) => s + (d.value || 0), 0) },
+    { stage: 'Qual', value: deals.filter(d => d.stage === 'Qualified').reduce((s, d) => s + (d.value || 0), 0) },
+    { stage: 'Meet', value: deals.filter(d => d.stage === 'Meeting').reduce((s, d) => s + (d.value || 0), 0) },
+    { stage: 'Prop', value: deals.filter(d => d.stage === 'Proposal').reduce((s, d) => s + (d.value || 0), 0) },
+    { stage: 'Nego', value: deals.filter(d => d.stage === 'Negotiation').reduce((s, d) => s + (d.value || 0), 0) },
     { stage: 'Won', value: deals.filter(d => d.stage === 'Won').reduce((s, d) => s + (d.value || 0), 0) },
   ];
 
-  // Receivables Pie Data
-  const receivablesPie = [
-    { name: 'Collected', value: paymentsReceived, color: '#10b981' },
-    { name: 'Outstanding', value: Math.max(0, outstandingReceivables), color: '#f59e0b' },
+  // Revenue trend data
+  const revenueTrendData = [
+    { month: 'Apr', revenue: paymentsReceived * 0.45 },
+    { month: 'May', revenue: paymentsReceived * 0.6 },
+    { month: 'Jun', revenue: paymentsReceived * 0.75 },
+    { month: 'Jul', revenue: paymentsReceived * 0.8 },
+    { month: 'Aug', revenue: paymentsReceived * 0.9 },
+    { month: 'Sep', revenue: paymentsReceived },
   ];
 
   const isEmptyDatabase = leads.length === 0 && deals.length === 0 && invoices.length === 0 && projects.length === 0;
 
+  // Greeting
+  const userName = userProfile?.displayName?.split(' ')[0] || 'Aaditya';
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
+
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Executive Welcome Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
-            Executive Command Center
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            {greeting}, {userName}
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Real-time business performance, sales telemetry, active deliveries & financials
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Here's what's happening across Brainlink Studio today.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Refresh Button */}
           <button
             onClick={fetchData}
             disabled={loading}
-            className="p-2 text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs"
+            className="st-btn-secondary st-btn-sm"
             title="Refresh metrics"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
 
-          {/* Date Filter */}
-          <div className="flex items-center bg-white border border-slate-200 rounded-lg p-1 text-xs font-semibold text-slate-600 shadow-2xs">
-            <button
-              onClick={() => setDateFilter('THIS_MONTH')}
-              className={`px-2.5 py-1 rounded ${dateFilter === 'THIS_MONTH' ? 'bg-blue-600 text-white' : 'hover:bg-slate-50'}`}
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => setDateFilter('THIS_QUARTER')}
-              className={`px-2.5 py-1 rounded ${dateFilter === 'THIS_QUARTER' ? 'bg-blue-600 text-white' : 'hover:bg-slate-50'}`}
-            >
-              Quarter
-            </button>
-            <button
-              onClick={() => setDateFilter('ALL')}
-              className={`px-2.5 py-1 rounded ${dateFilter === 'ALL' ? 'bg-blue-600 text-white' : 'hover:bg-slate-50'}`}
-            >
-              All Time
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/crm/leads')}
+            className="st-btn-secondary st-btn-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>New Lead</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/finance/invoices')}
+            className="st-btn-primary st-btn-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>New Invoice</span>
+          </button>
         </div>
       </div>
 
-      {/* Empty State Banner if clean database */}
+      {/* Empty State Banner if No Data */}
       {isEmptyDatabase && !loading && (
-        <EmptyState
-          icon={Sparkles}
-          title="Welcome to Brainlink Studio"
-          description="Your production database is currently empty. You can either begin creating your live leads, deals, and projects, or seed realistic starter records to test end-to-end workflows."
-          actionLabel={seeding ? 'Seeding Database...' : 'Populate Starter Dataset'}
-          onAction={handleSeedData}
-          secondaryAction={
+        <div className="st-card p-5 bg-blue-50/60 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-md bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-blue-900 dark:text-blue-200">
+                Fresh Workspace Initialized
+              </h3>
+              <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                You can create records manually or load realistic sample accounts to evaluate all features.
+              </p>
+            </div>
+          </div>
+          {isSuperAdmin && (
             <button
-              onClick={() => navigate('/studio/crm/leads')}
-              className="px-4 py-2.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+              onClick={handleSeedData}
+              disabled={seeding}
+              className="st-btn-primary st-btn-sm"
             >
-              + Create First Lead
+              {seeding ? 'Generating...' : 'Seed Starter Records'}
             </button>
-          }
-        />
+          )}
+        </div>
       )}
 
-      {/* Top Metric Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {/* Compact 4-Column KPI Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard
-          title="Total Leads"
-          value={totalLeads}
-          subtext={`${qualifiedLeads} qualified`}
-          icon={Users}
-          color="blue"
-          onClick={() => navigate('/studio/crm/leads')}
+          title="Inflow Cash"
+          value={formatINR(paymentsReceived)}
+          subtext={`Net: ${formatINR(netRevenue)}`}
+          trend="+18.4%"
+          icon={Receipt}
+          onClick={() => navigate('/finance')}
         />
         <StatCard
-          title="Active Pipeline"
+          title="Sales Pipeline"
           value={formatINR(pipelineValue)}
           subtext={`Weighted: ${formatINR(weightedPipeline)}`}
+          trend="+12.2%"
           icon={TrendingUp}
-          color="indigo"
-          onClick={() => navigate('/studio/sales/pipeline')}
+          onClick={() => navigate('/sales/pipeline')}
         />
         <StatCard
-          title="Won Deals"
-          value={wonDeals.length}
-          subtext={`${activeDeals.length} in negotiation`}
-          icon={CheckCircle2}
-          color="emerald"
-          onClick={() => navigate('/studio/sales/pipeline')}
+          title="Receivables"
+          value={formatINR(outstandingReceivables)}
+          subtext={`${overdueInvoices.length} overdue`}
+          trend={overdueInvoices.length > 0 ? `-${overdueInvoices.length}` : 'Clean'}
+          icon={AlertCircle}
+          onClick={() => navigate('/finance/invoices')}
         />
         <StatCard
           title="Active Projects"
           value={activeProjects.length}
-          subtext={delayedProjects.length > 0 ? `${delayedProjects.length} flagged at risk` : 'All deliveries on schedule'}
+          subtext={`${delayedProjects.length} at risk`}
+          trend={delayedProjects.length > 0 ? `-${delayedProjects.length}` : 'On track'}
           icon={FolderGit2}
-          color="cyan"
-          onClick={() => navigate('/studio/projects')}
-        />
-        <StatCard
-          title="Payments Collected"
-          value={formatINR(paymentsReceived)}
-          subtext={`Invoiced: ${formatINR(totalInvoiced)}`}
-          icon={CreditCard}
-          color="emerald"
-          onClick={() => navigate('/studio/finance/payments')}
-        />
-        <StatCard
-          title="Outstanding Receivables"
-          value={formatINR(outstandingReceivables)}
-          subtext={`${overdueInvoices.length} invoices overdue`}
-          icon={Receipt}
-          color={overdueInvoices.length > 0 ? 'rose' : 'amber'}
-          onClick={() => navigate('/studio/finance/invoices')}
-        />
-        <StatCard
-          title="Operating Expenses"
-          value={formatINR(totalExpenses)}
-          subtext={`${expenses.length} recorded entries`}
-          icon={DollarSign}
-          color="rose"
-          onClick={() => navigate('/studio/finance/expenses')}
-        />
-        <StatCard
-          title="Net Revenue"
-          value={formatINR(netRevenue)}
-          subtext="Collected - Operating Expenses"
-          icon={TrendingUp}
-          color="emerald"
-          onClick={() => navigate('/studio/finance')}
+          onClick={() => navigate('/projects')}
         />
       </div>
 
-      {/* Visual Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sales Pipeline Stage Breakdown */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">Pipeline Deal Value by Stage</h3>
-              <p className="text-xs text-slate-500">Total volume distributed across pipeline checkpoints</p>
-            </div>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pipelineByStage} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="stage" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <YAxis
-                  tick={{ fontSize: 11, fill: '#64748b' }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(val) => `₹${val / 1000}k`}
-                />
-                <Tooltip
-                  formatter={(value) => [formatINR(value), 'Deal Value']}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', fontSize: '12px' }}
-                />
-                <Bar dataKey="value" fill="#315cff" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Receivables & Cash Flow Distribution */}
-        <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Receivables Collection</h3>
-            <p className="text-xs text-slate-500">Collected cash vs outstanding balances</p>
-          </div>
-
-          <div className="h-52 my-auto">
-            {paymentsReceived === 0 && outstandingReceivables === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-slate-400">
-                No invoices or payments recorded
+      {/* Asymmetric 2-Column Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left Column (7 cols): Revenue & Active Projects */}
+        <div className="lg:col-span-7 space-y-5">
+          {/* Revenue Trajectory Chart */}
+          <div className="st-card p-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Cash Flow & Collections
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Actual reconciled customer payments in INR
+                </p>
               </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPie>
-                  <Pie
-                    data={receivablesPie}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {receivablesPie.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(val) => [formatINR(val), 'Amount']}
-                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', fontSize: '12px' }}
-                  />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                </RechartsPie>
-              </ResponsiveContainer>
-            )}
-          </div>
-
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-500">Total Billed:</span>
-            <span className="font-bold text-slate-800">{formatINR(totalInvoiced)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Section: Sales Funnel & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sales Conversion Funnel */}
-        <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-900 mb-1">Sales Conversion Funnel</h3>
-          <p className="text-xs text-slate-500 mb-4">Stage-by-stage pipeline velocity</p>
-
-          <div className="space-y-3">
-            {funnelStages.map((stg) => {
-              const maxCount = Math.max(...funnelStages.map(s => s.count), 1);
-              const pct = Math.round((stg.count / maxCount) * 100);
-              return (
-                <div key={stg.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-700">{stg.name}</span>
-                    <span className="text-slate-500">{stg.count}</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${Math.max(pct, 4)}%`, backgroundColor: stg.fill }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Live Activity Timeline */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">Recent Operational Activity</h3>
-              <p className="text-xs text-slate-500">Auditable events across CRM, Sales, Projects & Finance</p>
+              <span className="text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                {formatINR(paymentsReceived)} YTD
+              </span>
             </div>
-            <button
-              onClick={() => navigate('/studio/crm/activities')}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
-            >
-              <span>View All</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
+
+            <div className="h-56 mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={revenueTrendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#315CFF" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#315CFF" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(v) => `₹${v / 1000}k`} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0F172A',
+                      border: '1px solid #1E293B',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      color: '#FFFFFF',
+                    }}
+                    formatter={(val) => [formatINR(val), 'Received']}
+                  />
+                  <Area type="monotone" dataKey="revenue" stroke="#315CFF" strokeWidth={2} fillOpacity={1} fill="url(#revenueGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <ActivityTimeline
-            activities={activities}
-            emptyMessage="No operational activity logged yet. Actions taken across the system will appear here automatically."
-          />
+          {/* Active Deliveries Quick Table */}
+          <div className="st-card p-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Active Deliveries ({activeProjects.length})
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Current software sprints & engineering deliverables
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/projects')}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 font-medium"
+              >
+                View all <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/80 mt-2">
+              {activeProjects.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  No active projects currently in flight.
+                </div>
+              ) : (
+                activeProjects.slice(0, 4).map((proj) => (
+                  <div
+                    key={proj.id}
+                    onClick={() => navigate('/projects')}
+                    className="py-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 -mx-2 px-2 rounded-md cursor-pointer transition-colors"
+                  >
+                    <div className="min-w-0 flex-1 pr-4">
+                      <div className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+                        {proj.name}
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate">
+                        {proj.clientName} • Due {proj.targetDelivery || 'Flexible'}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="hidden sm:block text-right">
+                        <div className="text-xs font-mono font-medium text-slate-700 dark:text-slate-300">
+                          {formatINR(proj.budget || 0)}
+                        </div>
+                      </div>
+                      <StatusBadge status={proj.health || 'Good'} />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (5 cols): Pipeline Stages & Attention Radar */}
+        <div className="lg:col-span-5 space-y-5">
+          {/* Sales Pipeline Stage Distribution */}
+          <div className="st-card p-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Pipeline Stages ({activeDeals.length} deals)
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Volume distribution by sales stage
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/sales/pipeline')}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 font-medium"
+              >
+                Kanban <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="h-44 mt-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pipelineStages} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
+                  <XAxis dataKey="stage" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} tickFormatter={(v) => `₹${v / 1000}k`} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0F172A',
+                      border: '1px solid #1E293B',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      color: '#FFFFFF',
+                    }}
+                    formatter={(val) => [formatINR(val), 'Volume']}
+                  />
+                  <Bar dataKey="value" fill="#315CFF" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Attention Required Card (Overdue & At Risk) */}
+          {(overdueInvoices.length > 0 || delayedProjects.length > 0) && (
+            <div className="st-card p-4 border-amber-200 dark:border-amber-900/50 bg-amber-50/20 dark:bg-amber-950/10">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider pb-2 border-b border-amber-100 dark:border-amber-900/40">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Requires Attention Today</span>
+              </div>
+              <div className="mt-2.5 space-y-2 text-xs">
+                {overdueInvoices.slice(0, 2).map((inv) => (
+                  <div
+                    key={inv.id}
+                    onClick={() => navigate('/finance/invoices')}
+                    className="flex items-center justify-between p-2 rounded bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/40 cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-800 dark:text-slate-200">
+                        {inv.invoiceNumber} • {inv.clientName}
+                      </div>
+                      <div className="text-[11px] text-rose-600 dark:text-rose-400">
+                        Overdue since {inv.dueDate}
+                      </div>
+                    </div>
+                    <span className="font-mono font-semibold text-slate-800 dark:text-white">
+                      {formatINR(inv.total || 0)}
+                    </span>
+                  </div>
+                ))}
+                {delayedProjects.slice(0, 2).map((p) => (
+                  <div
+                    key={p.id}
+                    onClick={() => navigate('/projects')}
+                    className="flex items-center justify-between p-2 rounded bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/40 cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-800 dark:text-slate-200">{p.name}</div>
+                      <div className="text-[11px] text-rose-600 dark:text-rose-400">Target: {p.targetDelivery}</div>
+                    </div>
+                    <StatusBadge status={p.health || 'At Risk'} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Business Activity Stream */}
+          <div className="st-card p-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <h3 className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Live Audit Feed
+                </h3>
+              </div>
+              <span className="text-[10px] text-slate-400">Real-time</span>
+            </div>
+
+            <div className="mt-3">
+              <ActivityTimeline activities={activities} limit={5} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

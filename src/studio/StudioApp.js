@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import StudioLayout from './components/layout/StudioLayout';
+import './studio.css';
 
 // Pages
 const Login = lazy(() => import('./pages/auth/Login'));

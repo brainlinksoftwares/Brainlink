@@ -8,10 +8,14 @@ import {
   Lock,
   Check,
   KeyRound,
+  ChevronRight,
+  ShieldAlert,
+  Users,
 } from 'lucide-react';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
-import Modal from '../../components/ui/Modal';
+import Drawer from '../../components/ui/Drawer';
+import StatCard from '../../components/ui/StatCard';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ROLES, ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS } from '../../context/rbac';
@@ -25,8 +29,8 @@ export default function UsersManagement() {
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -64,7 +68,7 @@ export default function UsersManagement() {
       role: user.role || ROLES.SALES_EXECUTIVE,
       permissions: user.permissions || DEFAULT_ROLE_PERMISSIONS[user.role] || [],
     });
-    setEditModalOpen(true);
+    setEditDrawerOpen(true);
   };
 
   const handleRoleChange = (newRole) => {
@@ -105,7 +109,7 @@ export default function UsersManagement() {
       });
 
       toast.success(`Updated permissions for ${selectedUser.displayName || selectedUser.email}`);
-      setEditModalOpen(false);
+      setEditDrawerOpen(false);
       await loadUsers();
     } catch (err) {
       toast.error('Failed to update user authorization');
@@ -127,7 +131,7 @@ export default function UsersManagement() {
         createFormData.role
       );
       toast.success(`Provisioned user account for ${createFormData.email}`);
-      setCreateModalOpen(false);
+      setCreateDrawerOpen(false);
       setCreateFormData({
         email: '',
         password: '',
@@ -140,15 +144,28 @@ export default function UsersManagement() {
     }
   };
 
+  // Metrics
+  const totalUsers = users.length;
+  const superAdmins = users.filter(u => u.role === ROLES.SUPER_ADMIN).length;
+  const operationsStaff = users.filter(u => [ROLES.ADMIN, ROLES.FINANCE].includes(u.role)).length;
+  const salesStaff = users.filter(u => [ROLES.SALES_MANAGER, ROLES.SALES_EXECUTIVE].includes(u.role)).length;
+
   const columns = [
     {
       key: 'displayName',
-      label: 'Staff Member',
+      label: 'Staff Member & Email',
       sortable: true,
       render: (val, row) => (
-        <div>
-          <div className="font-bold text-slate-900">{val || row.email?.split('@')[0]}</div>
-          <div className="text-xs text-slate-500">{row.email}</div>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-700 dark:text-slate-300 shrink-0">
+            {(val || row.email || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <div className="font-medium text-slate-900 dark:text-white truncate">
+              {val || row.email?.split('@')[0]}
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{row.email}</div>
+          </div>
         </div>
       ),
     },
@@ -157,11 +174,11 @@ export default function UsersManagement() {
       label: 'Assigned RBAC Role',
       sortable: true,
       render: (val) => {
-        let badge = 'bg-slate-100 text-slate-700';
-        if (val === 'SUPER_ADMIN') badge = 'bg-rose-50 text-rose-700 border-rose-200 font-bold';
-        else if (val === 'ADMIN') badge = 'bg-amber-50 text-amber-700 border-amber-200';
-        else if (val === 'SALES_MANAGER') badge = 'bg-blue-50 text-blue-700 border-blue-200';
-        else if (val === 'FINANCE') badge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        let badge = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+        if (val === 'SUPER_ADMIN') badge = 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900 font-semibold';
+        else if (val === 'ADMIN') badge = 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900';
+        else if (val === 'SALES_MANAGER') badge = 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900';
+        else if (val === 'FINANCE') badge = 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900';
 
         return (
           <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs border ${badge}`}>
@@ -178,25 +195,25 @@ export default function UsersManagement() {
     },
     {
       key: 'permissions',
-      label: 'Granular Access',
+      label: 'Privileges',
       render: (val = []) => (
-        <span className="text-xs text-slate-600 font-medium">
-          {val.length} active permissions
+        <span className="text-xs text-slate-600 dark:text-slate-400 font-mono">
+          {val.length} granular rules
         </span>
       ),
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: '',
       align: 'right',
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => handleOpenEdit(row)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors"
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>Manage Access</span>
+            <span>Privileges</span>
           </button>
         </div>
       ),
@@ -205,30 +222,65 @@ export default function UsersManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span>System</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-slate-900 dark:text-white font-medium">Access Control</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
             User Directory & RBAC Security
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Section 6 RBAC compliance: grant granular privileges across CRM, Sales, Deliveries, and Invoicing
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Role-Based Access Control matrix: provision corporate accounts, define operational scopes, and enforce principle of least privilege
           </p>
         </div>
 
         <button
-          onClick={() => setCreateModalOpen(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all"
+          onClick={() => setCreateDrawerOpen(true)}
+          className="st-btn-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
-          <span>Provision User</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span>Provision Account</span>
         </button>
       </div>
 
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          label="Total Users"
+          value={totalUsers}
+          icon={Users}
+          subtext="Indexed identities"
+        />
+        <StatCard
+          label="Super Administrators"
+          value={superAdmins}
+          icon={ShieldAlert}
+          subtext="Full root privilege"
+        />
+        <StatCard
+          label="Operations & Finance"
+          value={operationsStaff}
+          icon={Shield}
+          subtext="Commercial authority"
+        />
+        <StatCard
+          label="Sales Organization"
+          value={salesStaff}
+          icon={UserCheck}
+          subtext="Pipeline & CRM access"
+        />
+      </div>
+
+      {/* Main Table */}
       <DataTable
         columns={columns}
         data={users}
         searchKey={['displayName', 'email', 'role']}
-        searchPlaceholder="Search staff by name, email, role..."
+        searchPlaceholder="Search accounts by name, email, or role..."
         filterKey="role"
         filterOptions={Object.values(ROLES).map(r => ({ label: r, value: r }))}
         onRowClick={(u) => handleOpenEdit(u)}
@@ -236,39 +288,41 @@ export default function UsersManagement() {
         loading={loading}
       />
 
-      {/* Edit Role & Granular Permissions Modal */}
-      <Modal
-        isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        title={`Configure Privileges: ${selectedUser?.displayName || selectedUser?.email}`}
-        subtitle="Update assigned operational role or toggle granular capabilities"
-        maxWidth="max-w-2xl"
+      {/* Slide-over Drawer for Permissions Editing */}
+      <Drawer
+        isOpen={editDrawerOpen}
+        onClose={() => setEditDrawerOpen(false)}
+        title={`Configure Role: ${selectedUser?.displayName || selectedUser?.email}`}
+        subtitle="Manage assigned operational role or toggle fine-grained security capabilities"
+        size="lg"
         footer={
           <>
             <button
               type="button"
-              onClick={() => setEditModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+              onClick={() => setEditDrawerOpen(false)}
+              className="st-btn-secondary px-3.5 py-1.5 text-xs"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSaveUser}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
+              className="st-btn-primary px-4 py-1.5 text-xs shadow-sm"
             >
               Save Authorization
             </button>
           </>
         }
       >
-        <form onSubmit={handleSaveUser} className="space-y-4 text-xs">
+        <form onSubmit={handleSaveUser} className="space-y-4">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Assigned Operational Role</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Assigned Operational Role
+            </label>
             <select
               value={formData.role}
               onChange={(e) => handleRoleChange(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white font-semibold"
+              className="st-select font-medium"
             >
               {Object.values(ROLES).map((r) => (
                 <option key={r} value={r}>{r}</option>
@@ -276,98 +330,114 @@ export default function UsersManagement() {
             </select>
           </div>
 
-          <div className="pt-3 border-t border-slate-100">
-            <span className="block font-bold text-slate-900 mb-2">Granular Permissions Matrix</span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+            <span className="block text-xs font-semibold text-slate-900 dark:text-white mb-2">
+              Granular Capabilities Matrix
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-1">
               {ALL_PERMISSIONS.map((perm) => {
                 const isChecked = formData.permissions.includes(perm);
                 return (
                   <label
                     key={perm}
-                    className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
-                      isChecked ? 'bg-blue-50/60 border-blue-200 text-blue-900 font-semibold' : 'border-slate-200 text-slate-600'
+                    className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                      isChecked
+                        ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-300'
+                        : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => handleTogglePermission(perm)}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
                     />
-                    <span className="font-mono text-[11px]">{perm}</span>
+                    <span className="font-mono text-[11px] truncate">{perm}</span>
                   </label>
                 );
               })}
             </div>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
-      {/* Provision User Modal */}
-      <Modal
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        title="Provision New Staff Account"
-        subtitle="Create credentials and assign initial RBAC operational scope"
+      {/* Slide-over Drawer for Provisioning New Account */}
+      <Drawer
+        isOpen={createDrawerOpen}
+        onClose={() => setCreateDrawerOpen(false)}
+        title="Provision Staff Account"
+        subtitle="Create credentials and assign initial RBAC security clearance"
+        size="md"
         footer={
           <>
             <button
               type="button"
-              onClick={() => setCreateModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+              onClick={() => setCreateDrawerOpen(false)}
+              className="st-btn-secondary px-3.5 py-1.5 text-xs"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleCreateUser}
-              className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
+              className="st-btn-primary px-4 py-1.5 text-xs shadow-sm"
             >
               Provision Account
             </button>
           </>
         }
       >
-        <form onSubmit={handleCreateUser} className="grid grid-cols-1 gap-4 text-xs">
+        <form onSubmit={handleCreateUser} className="space-y-4">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Full Legal / Staff Name *
+            </label>
             <input
               type="text"
               required
               value={createFormData.displayName}
               onChange={(e) => setCreateFormData({ ...createFormData, displayName: e.target.value })}
-              placeholder="e.g. Senior Project Manager"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
+              placeholder="e.g. Rahul Sharma"
+              className="st-input"
             />
           </div>
+
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Work Email *</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Corporate Email Address *
+            </label>
             <input
               type="email"
               required
               value={createFormData.email}
               onChange={(e) => setCreateFormData({ ...createFormData, email: e.target.value })}
-              placeholder="user@brainlink.in"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
+              placeholder="rahul@brainlink.in"
+              className="st-input"
             />
           </div>
+
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Password *</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Initial Password *
+            </label>
             <input
               type="password"
               required
               value={createFormData.password}
               onChange={(e) => setCreateFormData({ ...createFormData, password: e.target.value })}
-              placeholder="••••••••"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
+              placeholder="••••••••••••"
+              className="st-input"
             />
           </div>
+
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Assigned Role</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Initial Operational Role
+            </label>
             <select
               value={createFormData.role}
               onChange={(e) => setCreateFormData({ ...createFormData, role: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
+              className="st-select font-medium"
             >
               {Object.values(ROLES).map((r) => (
                 <option key={r} value={r}>{r}</option>
@@ -375,7 +445,7 @@ export default function UsersManagement() {
             </select>
           </div>
         </form>
-      </Modal>
+      </Drawer>
     </div>
   );
 }
