@@ -611,65 +611,67 @@ export default function Invoices() {
         </form>
       </Drawer>
 
-      {/* SIDE DRAWER: Professional Document Preview (Section 24) */}
+      {/* SIDE DRAWER: Professional Two-Column Stripe/Ramp Invoice Workspace */}
       <Drawer
         isOpen={previewDrawerOpen}
         onClose={() => setPreviewDrawerOpen(false)}
-        title={selectedInvoice?.invoiceNumber || 'Invoice Preview'}
+        title={selectedInvoice?.invoiceNumber || 'Invoice Details'}
         subtitle={`Issued to ${selectedInvoice?.clientCompany || selectedInvoice?.clientName}`}
-        width="max-w-2xl"
+        width="max-w-5xl"
         footer={
           selectedInvoice && (
-            <>
-              <button
-                type="button"
-                onClick={() => handleDownloadPDF(selectedInvoice)}
-                className="st-btn-secondary"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download PDF</span>
-              </button>
-              {selectedInvoice.status !== 'Paid' && selectedInvoice.status !== 'Cancelled' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCancelModalOpen(true);
-                    }}
-                    className="st-btn-danger st-btn-sm"
-                  >
-                    <Ban className="w-3.5 h-3.5" />
-                    <span>Cancel</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenPayment(selectedInvoice)}
-                    className="st-btn-primary"
-                  >
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>Record Payment</span>
-                  </button>
-                </>
-              )}
-            </>
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPDF(selectedInvoice)}
+                  className="st-btn-secondary st-btn-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedInvoice.status !== 'Paid' && selectedInvoice.status !== 'Cancelled' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setCancelModalOpen(true)}
+                      className="st-btn-danger st-btn-sm"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                      <span>Cancel Invoice</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenPayment(selectedInvoice)}
+                      className="st-btn-primary st-btn-sm"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>Record Payment</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           )
         }
       >
         {selectedInvoice && (
-          <div className="space-y-5 text-xs">
-            {/* Document Header */}
-            <div className="st-card p-5 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-4">
-              <div className="flex items-start justify-between">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs">
+            {/* Left: Real Invoice Preview (8 cols) */}
+            <div className="lg:col-span-8 st-card p-5 border-[#E7E9EE] dark:border-[#222733] bg-white dark:bg-[#10131A] space-y-4">
+              <div className="flex items-start justify-between pb-3 border-b border-[#E7E9EE] dark:border-[#222733]">
                 <div>
-                  <div className="text-base font-bold text-slate-900 dark:text-white">
+                  <div className="text-base font-bold text-[#111318] dark:text-white">
                     BRAINLINK SOFTWARES
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  <div className="text-[11px] text-[#626A78] dark:text-[#9AA3B2] mt-0.5">
                     GSTIN: 07AABCU9603R1ZM • Noida, UP, India
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
+                  <div className="text-xs font-mono font-bold text-[#315CFF]">
                     {selectedInvoice.invoiceNumber}
                   </div>
                   <div className="mt-1">
@@ -679,31 +681,33 @@ export default function Invoices() {
               </div>
 
               {/* Billed To / Dates */}
-              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+              <div className="grid grid-cols-2 gap-4 text-[11px]">
                 <div>
-                  <div className="text-slate-400 uppercase tracking-wider font-semibold mb-1">
+                  <div className="text-[#9299A6] uppercase tracking-wider font-semibold mb-1">
                     Billed To:
                   </div>
-                  <div className="font-semibold text-slate-900 dark:text-white">
+                  <div className="font-semibold text-[#111318] dark:text-white text-xs">
                     {selectedInvoice.clientCompany || selectedInvoice.clientName}
                   </div>
-                  <div className="text-slate-500">{selectedInvoice.billingAddress || 'India'}</div>
+                  <div className="text-[#626A78] dark:text-[#9AA3B2] mt-0.5">
+                    {selectedInvoice.billingAddress || 'India'}
+                  </div>
                   {selectedInvoice.clientGstin && (
-                    <div className="font-mono text-slate-600 dark:text-slate-300 mt-0.5">
+                    <div className="font-mono text-[#626A78] dark:text-[#9AA3B2] mt-0.5">
                       GSTIN: {selectedInvoice.clientGstin}
                     </div>
                   )}
                 </div>
                 <div className="text-right space-y-1">
                   <div>
-                    <span className="text-slate-400">Issue Date: </span>
-                    <span className="font-medium text-slate-800 dark:text-slate-200">
+                    <span className="text-[#9299A6]">Issue Date: </span>
+                    <span className="font-medium text-[#111318] dark:text-white">
                       {selectedInvoice.invoiceDate || selectedInvoice.createdAt}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400">Due Date: </span>
-                    <span className="font-medium text-slate-800 dark:text-slate-200">
+                    <span className="text-[#9299A6]">Due Date: </span>
+                    <span className="font-medium text-[#111318] dark:text-white">
                       {selectedInvoice.dueDate || 'Upon receipt'}
                     </span>
                   </div>
@@ -711,10 +715,10 @@ export default function Invoices() {
               </div>
 
               {/* Line Items Table */}
-              <div className="pt-2">
+              <div className="pt-2 overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-700 text-[10px] font-semibold uppercase text-slate-400">
+                    <tr className="border-b border-[#E7E9EE] dark:border-[#222733] text-[10px] font-semibold uppercase text-[#9299A6]">
                       <th className="py-2">Item</th>
                       <th className="py-2 text-center">SAC</th>
                       <th className="py-2 text-center">Qty</th>
@@ -722,16 +726,22 @@ export default function Invoices() {
                       <th className="py-2 text-right">Amount</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono text-xs">
+                  <tbody className="divide-y divide-[#F0F2F5] dark:divide-[#191E2A] text-xs">
                     {(selectedInvoice.items || []).map((item, idx) => (
                       <tr key={idx}>
-                        <td className="py-2.5 font-sans pr-2 text-slate-800 dark:text-slate-200">
+                        <td className="py-2.5 font-medium pr-2 text-[#111318] dark:text-white">
                           {item.description}
                         </td>
-                        <td className="py-2.5 text-center text-slate-500">{item.hsn || '998314'}</td>
-                        <td className="py-2.5 text-center text-slate-700 dark:text-slate-300">{item.quantity || 1}</td>
-                        <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{formatINR(item.rate || 0)}</td>
-                        <td className="py-2.5 text-right font-semibold text-slate-900 dark:text-white">
+                        <td className="py-2.5 text-center text-[#9299A6] font-mono">
+                          {item.hsn || '998314'}
+                        </td>
+                        <td className="py-2.5 text-center font-medium text-[#111318] dark:text-white">
+                          {item.quantity || 1}
+                        </td>
+                        <td className="py-2.5 text-right font-medium text-[#111318] dark:text-white font-sans">
+                          {formatINR(item.rate || 0)}
+                        </td>
+                        <td className="py-2.5 text-right font-bold text-[#111318] dark:text-white font-sans">
                           {formatINR((item.quantity || 1) * (item.rate || 0))}
                         </td>
                       </tr>
@@ -740,38 +750,96 @@ export default function Invoices() {
                 </table>
               </div>
 
-              {/* Financial Summary */}
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-end">
-                <div className="w-64 space-y-1.5 font-mono text-xs text-right">
-                  <div className="flex justify-between text-slate-500">
+              {/* Invoice Calculations */}
+              <div className="pt-3 border-t border-[#E7E9EE] dark:border-[#222733] flex justify-end">
+                <div className="w-64 space-y-1.5 text-xs text-right">
+                  <div className="flex justify-between text-[#626A78] dark:text-[#9AA3B2]">
                     <span>Subtotal:</span>
                     <span>{formatINR(selectedInvoice.subtotal || selectedInvoice.total)}</span>
                   </div>
                   {selectedInvoice.taxAmount > 0 && (
-                    <div className="flex justify-between text-slate-500">
+                    <div className="flex justify-between text-[#626A78] dark:text-[#9AA3B2]">
                       <span>GST (18%):</span>
                       <span>{formatINR(selectedInvoice.taxAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between font-bold text-slate-900 dark:text-white text-sm pt-1.5 border-t border-slate-200 dark:border-slate-800">
-                    <span>Total:</span>
+                  <div className="flex justify-between font-bold text-[#111318] dark:text-white text-sm pt-1.5 border-t border-[#E7E9EE] dark:border-[#222733]">
+                    <span>Total Amount:</span>
                     <span>{formatINR(selectedInvoice.total || 0)}</span>
                   </div>
-                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                    <span>Paid:</span>
-                    <span>{formatINR(selectedInvoice.paidAmount || 0)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Payment Summary Panel (4 cols - Section 33) */}
+            <div className="lg:col-span-4 space-y-4">
+              <div className="st-card p-4 space-y-3 bg-[#F6F7F9]/50 dark:bg-[#151923]/50 border-[#E7E9EE] dark:border-[#222733]">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#9299A6] pb-2 border-b border-[#E7E9EE] dark:border-[#222733]">
+                  Payment Summary
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#626A78] dark:text-[#9AA3B2]">Total Contract:</span>
+                    <span className="font-bold text-[#111318] dark:text-white text-sm">
+                      {formatINR(selectedInvoice.total || 0)}
+                    </span>
                   </div>
-                  <div className="flex justify-between text-amber-600 dark:text-amber-400 font-semibold">
-                    <span>Balance Due:</span>
-                    <span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-emerald-700 dark:text-emerald-400 font-medium">Amount Paid:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatINR(selectedInvoice.paidAmount || 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs pt-2 border-t border-[#E7E9EE] dark:border-[#222733]">
+                    <span className="text-amber-700 dark:text-amber-400 font-semibold">Outstanding Due:</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400 text-sm">
                       {formatINR(
                         selectedInvoice.outstandingAmount !== undefined
                           ? selectedInvoice.outstandingAmount
-                          : (selectedInvoice.total || 0) - (selectedInvoice.paidAmount || 0)
+                          : Math.max(0, (selectedInvoice.total || 0) - (selectedInvoice.paidAmount || 0))
                       )}
                     </span>
                   </div>
                 </div>
+
+                {selectedInvoice.status !== 'Paid' && selectedInvoice.status !== 'Cancelled' && (
+                  <div className="pt-2">
+                    <button
+                      onClick={() => handleOpenPayment(selectedInvoice)}
+                      className="st-btn-primary w-full shadow-sm"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>Record Payment</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Settlement Protocol Status */}
+              <div className="st-card p-3.5 space-y-2 text-xs">
+                <div className="text-[10px] uppercase font-semibold text-[#9299A6] tracking-wider">
+                  Settlement Status
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${
+                    selectedInvoice.status === 'Paid'
+                      ? 'bg-emerald-500'
+                      : selectedInvoice.status === 'Cancelled'
+                      ? 'bg-rose-500'
+                      : 'bg-amber-500'
+                  }`} />
+                  <span className="font-semibold text-[#111318] dark:text-white">
+                    {selectedInvoice.status === 'Paid'
+                      ? 'Fully Reconciled'
+                      : selectedInvoice.status === 'Cancelled'
+                      ? 'Cancelled Void'
+                      : 'Awaiting Settlement'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#626A78] dark:text-[#9AA3B2] leading-relaxed">
+                  Recorded transactions automatically update the double-entry accounting ledger and client balance.
+                </p>
               </div>
             </div>
           </div>

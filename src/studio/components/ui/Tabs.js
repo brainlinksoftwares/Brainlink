@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function Tabs({ tabs, activeTab, onChange }) {
   return (
-    <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 mb-5 overflow-x-auto studio-scrollbar">
+    <div className="flex items-center gap-1 border-b border-[#E7E9EE] dark:border-[#222733] mb-5 overflow-x-auto studio-scrollbar">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
@@ -10,20 +10,20 @@ export default function Tabs({ tabs, activeTab, onChange }) {
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`flex items-center gap-2 px-3 py-2 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+            className={`flex items-center gap-2 px-3 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors -mb-px ${
               isActive
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'
+                ? 'border-[#315CFF] text-[#315CFF] dark:text-[#5D80FF]'
+                : 'border-transparent text-[#626A78] hover:text-[#111318] dark:text-[#9AA3B2] dark:hover:text-white'
             }`}
           >
             {Icon && <Icon className="w-3.5 h-3.5" />}
             <span>{tab.label}</span>
             {tab.count !== undefined && (
               <span
-                className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-sans font-semibold ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
-                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                    ? 'bg-[#315CFF]/15 text-[#315CFF] dark:text-[#5D80FF]'
+                    : 'bg-[#F6F7F9] text-[#626A78] dark:bg-[#151923] dark:text-[#9AA3B2]'
                 }`}
               >
                 {tab.count}

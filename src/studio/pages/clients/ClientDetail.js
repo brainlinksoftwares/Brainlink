@@ -121,29 +121,29 @@ export default function ClientDetail() {
       <div className="st-card p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-lg bg-blue-600/10 border border-blue-600/20 text-blue-600 dark:text-blue-400 font-bold text-lg flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-lg bg-[#315CFF]/10 border border-[#315CFF]/20 text-[#315CFF] font-bold text-lg flex items-center justify-center shrink-0">
               {client.companyName ? client.companyName.charAt(0).toUpperCase() : 'C'}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+                <h1 className="text-lg font-bold text-[#111318] dark:text-white">
                   {client.companyName}
                 </h1>
                 <StatusBadge status={client.status || 'Active'} />
               </div>
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-[#626A78] dark:text-[#9AA3B2] mt-1">
                 {client.primaryContact && <span>Attn: {client.primaryContact}</span>}
                 {client.email && (
                   <span className="flex items-center gap-1">
-                    <Mail className="w-3 h-3" /> {client.email}
+                    <Mail className="w-3 h-3 text-[#9299A6]" /> {client.email}
                   </span>
                 )}
                 {client.phone && (
                   <span className="flex items-center gap-1">
-                    <Phone className="w-3 h-3" /> {client.phone}
+                    <Phone className="w-3 h-3 text-[#9299A6]" /> {client.phone}
                   </span>
                 )}
-                {client.gstin && <span className="font-mono">GSTIN: {client.gstin}</span>}
+                {client.gstin && <span className="font-mono text-xs">GSTIN: {client.gstin}</span>}
               </div>
             </div>
           </div>
@@ -167,28 +167,28 @@ export default function ClientDetail() {
         </div>
 
         {/* Financial KPI Summary Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
-            <span className="text-slate-400 uppercase font-semibold text-[10px] block">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-[#E7E9EE] dark:border-[#222733] text-xs">
+          <div className="bg-[#F6F7F9] dark:bg-[#151923] p-3 rounded-lg border border-[#E7E9EE] dark:border-[#222733]">
+            <span className="text-[#9299A6] uppercase font-semibold text-[10px] block">
               Lifetime Value
             </span>
-            <span className="font-mono text-base font-bold text-slate-900 dark:text-white mt-0.5 block">
+            <span className="font-sans text-base font-bold text-[#111318] dark:text-white mt-0.5 block">
               {formatINR(totalBilled)}
             </span>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
-            <span className="text-slate-400 uppercase font-semibold text-[10px] block">
+          <div className="bg-[#F6F7F9] dark:bg-[#151923] p-3 rounded-lg border border-[#E7E9EE] dark:border-[#222733]">
+            <span className="text-[#9299A6] uppercase font-semibold text-[10px] block">
               Collected Cash
             </span>
-            <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+            <span className="font-sans text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
               {formatINR(totalPaid)}
             </span>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
-            <span className="text-slate-400 uppercase font-semibold text-[10px] block">
+          <div className="bg-[#F6F7F9] dark:bg-[#151923] p-3 rounded-lg border border-[#E7E9EE] dark:border-[#222733]">
+            <span className="text-[#9299A6] uppercase font-semibold text-[10px] block">
               Outstanding Due
             </span>
-            <span className={`font-mono text-base font-bold mt-0.5 block ${outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
+            <span className={`font-sans text-base font-bold mt-0.5 block ${outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-[#626A78] dark:text-[#9AA3B2]'}`}>
               {formatINR(outstanding)}
             </span>
           </div>

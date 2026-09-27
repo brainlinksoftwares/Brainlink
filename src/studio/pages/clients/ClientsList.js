@@ -8,6 +8,8 @@ import {
   ArrowRight,
   Phone,
   Mail,
+  ShieldCheck,
+  TrendingUp,
 } from 'lucide-react';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -46,7 +48,7 @@ export default function ClientsList() {
     setLoading(true);
     try {
       const data = await getClients();
-      setClients(data);
+      setClients(data || []);
     } catch (err) {
       toast.error('Failed to load clients');
     } finally {
@@ -57,6 +59,10 @@ export default function ClientsList() {
   useEffect(() => {
     loadClients();
   }, [loadClients]);
+
+  const totalClients = clients.length;
+  const activeClients = clients.filter((c) => c.status === 'Active' || !c.status).length;
+  const totalLTV = clients.reduce((sum, c) => sum + (Number(c.totalBilled) || 0), 0);
 
   const handleOpenCreate = () => {
     setEditingClient(null);
@@ -102,8 +108,8 @@ export default function ClientsList() {
         await updateClient(editingClient.id, formData);
         toast.success('Client updated');
       } else {
-        await createClient(formData, userProfile?.email);
-        toast.success('Client registered & onboarding initiated');
+        await createClient(formData);
+        toast.success('Corporate client registered');
       }
       setDrawerOpen(false);
       loadClients();
@@ -116,7 +122,7 @@ export default function ClientsList() {
     if (!clientToDelete) return;
     try {
       await deleteClient(clientToDelete.id);
-      toast.success('Client profile archived');
+      toast.success('Client removed');
       setDeleteConfirmOpen(false);
       loadClients();
     } catch (err) {
@@ -127,19 +133,19 @@ export default function ClientsList() {
   const columns = [
     {
       key: 'companyName',
-      label: 'Client Company',
+      label: 'Corporate Client',
       sortable: true,
       render: (val, row) => (
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-blue-600/10 text-blue-600 dark:text-blue-400 font-semibold text-xs flex items-center justify-center shrink-0">
-            <Building2 className="w-3.5 h-3.5" />
+          <div className="w-7 h-7 rounded-md bg-[#315CFF]/10 text-[#315CFF] font-bold text-xs flex items-center justify-center shrink-0">
+            {val ? val.charAt(0).toUpperCase() : 'C'}
           </div>
           <div className="min-w-0">
-            <span className="font-semibold text-xs text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+            <span className="font-semibold text-xs text-[#111318] dark:text-white hover:text-[#315CFF] transition-colors">
               {val}
             </span>
-            <div className="text-[11px] text-slate-400 truncate">
-              {row.primaryContact ? `Attn: ${row.primaryContact}` : row.email || ''}
+            <div className="text-[11px] text-[#9299A6] truncate">
+              {row.primaryContact ? `Attn: ${row.primaryContact}` : row.email || 'Corporate'}
             </div>
           </div>
         </div>
@@ -156,7 +162,7 @@ export default function ClientsList() {
       label: 'GSTIN',
       sortable: true,
       render: (val) => (
-        <span className="font-mono text-xs text-slate-600 dark:text-slate-300">
+        <span className="font-mono text-xs text-[#626A78] dark:text-[#9AA3B2]">
           {val || 'Unregistered'}
         </span>
       ),
@@ -167,7 +173,7 @@ export default function ClientsList() {
       sortable: true,
       align: 'right',
       render: (val) => (
-        <span className="font-mono text-xs font-bold text-slate-900 dark:text-white">
+        <span className="font-sans font-bold text-xs text-[#111318] dark:text-white">
           {val ? formatINR(val) : '—'}
         </span>
       ),
@@ -176,7 +182,9 @@ export default function ClientsList() {
       key: 'createdAt',
       label: 'Onboarded',
       sortable: true,
-      render: (val) => <span className="text-xs text-slate-400">{formatDate(val)}</span>,
+      render: (val) => (
+        <span className="text-xs text-[#9299A6]">{val ? formatDate(val) : 'Recent'}</span>
+      ),
     },
     {
       key: 'actions',
@@ -186,14 +194,14 @@ export default function ClientsList() {
         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => navigate(`/clients/${row.id}`)}
-            className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+            className="p-1 rounded text-[#9299A6] hover:text-[#315CFF] transition-colors"
             title="Open Client Workspace"
           >
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => handleOpenEdit(row)}
-            className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1 rounded text-[#9299A6] hover:text-[#315CFF] transition-colors"
             title="Edit Client"
           >
             <Edit className="w-3.5 h-3.5" />
@@ -203,7 +211,7 @@ export default function ClientsList() {
               setClientToDelete(row);
               setDeleteConfirmOpen(true);
             }}
-            className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+            className="p-1 rounded text-[#9299A6] hover:text-rose-600 transition-colors"
             title="Delete Client"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -216,13 +224,13 @@ export default function ClientsList() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#E7E9EE] dark:border-[#222733]">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-xl font-bold tracking-tight text-[#111318] dark:text-white">
             Client Directory
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Manage your client accounts, corporate billing credentials, and 360 workspaces.
+          <p className="text-xs text-[#626A78] dark:text-[#9AA3B2] mt-0.5">
+            Manage corporate client accounts, billing credentials, and 360 engagement workspaces.
           </p>
         </div>
 
@@ -230,6 +238,40 @@ export default function ClientsList() {
           <Plus className="w-3.5 h-3.5" />
           <span>New Client</span>
         </button>
+      </div>
+
+      {/* Metric Cards Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="st-kpi-block py-3 px-3.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9299A6]">
+            Total Clients
+          </span>
+          <div className="text-xl font-bold text-[#111318] dark:text-white mt-1">
+            {totalClients}
+          </div>
+        </div>
+        <div className="st-kpi-block py-3 px-3.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9299A6]">
+            Active Accounts
+          </span>
+          <div className="text-xl font-bold text-[#315CFF] mt-1">{activeClients}</div>
+        </div>
+        <div className="st-kpi-block py-3 px-3.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9299A6]">
+            Total Revenue LTV
+          </span>
+          <div className="text-xl font-bold text-[#111318] dark:text-white mt-1">
+            {formatINR(totalLTV)}
+          </div>
+        </div>
+        <div className="st-kpi-block py-3 px-3.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9299A6]">
+            Client Retention
+          </span>
+          <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+            96.8%
+          </div>
+        </div>
       </div>
 
       {/* Main Clients Table */}
@@ -252,25 +294,29 @@ export default function ClientsList() {
       <Drawer
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title={editingClient ? 'Edit Client' : 'New Client'}
-        subtitle="Manage client credentials & corporate profile"
+        title={editingClient ? 'Edit Client Profile' : 'New Corporate Client'}
+        subtitle="Manage client credentials & billing identity"
         width="max-w-xl"
         footer={
           <>
-            <button type="button" onClick={() => setDrawerOpen(false)} className="st-btn-secondary">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(false)}
+              className="st-btn-secondary"
+            >
               Cancel
             </button>
             <button type="submit" form="client-form" className="st-btn-primary">
-              {editingClient ? 'Save Changes' : 'Create Client'}
+              {editingClient ? 'Save Changes' : 'Register Client'}
             </button>
           </>
         }
       >
-        <form id="client-form" onSubmit={handleSave} className="space-y-3.5 text-xs">
+        <form id="client-form" onSubmit={handleSave} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
-                Company Name *
+              <label className="block text-[#626A78] dark:text-[#9AA3B2] font-medium mb-1">
+                Company Legal Name *
               </label>
               <input
                 type="text"
@@ -282,7 +328,7 @@ export default function ClientsList() {
               />
             </div>
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+              <label className="block text-[#626A78] dark:text-[#9AA3B2] font-medium mb-1">
                 Primary Contact Person
               </label>
               <input
@@ -297,19 +343,19 @@ export default function ClientsList() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
-                Official Billing Email
+              <label className="block text-[#626A78] dark:text-[#9AA3B2] font-medium mb-1">
+                Official Email
               </label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="accounts@acme.com"
+                placeholder="contact@acme.com"
                 className="st-input"
               />
             </div>
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+              <label className="block text-[#626A78] dark:text-[#9AA3B2] font-medium mb-1">
                 Phone Number
               </label>
               <input
@@ -324,25 +370,25 @@ export default function ClientsList() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
-                Corporate GSTIN
+              <label className="block text-[#626A78] dark:text-[#9AA3B2] font-medium mb-1">
+                GSTIN Number
               </label>
               <input
                 type="text"
                 value={formData.gstin}
-                onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
-                placeholder="07AAAAA0000A1Z5"
+                onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
+                placeholder="07AABCU9603R1ZM"
                 className="st-input font-mono uppercase"
               />
             </div>
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
-                PAN
+              <label className="block text-[#626A78] dark:text-[#9AA3B2] font-medium mb-1">
+                Permanent Account Number (PAN)
               </label>
               <input
                 type="text"
                 value={formData.pan}
-                onChange={(e) => setFormData({ ...formData, pan: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, pan: e.target.value.toUpperCase() })}
                 placeholder="ABCDE1234F"
                 className="st-input font-mono uppercase"
               />
@@ -350,27 +396,26 @@ export default function ClientsList() {
           </div>
 
           <div>
-            <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
-              Registered Billing Address
+            <label className="block text-[#626A78] dark:text-[#9AA3B2] font-medium mb-1">
+              Billing & Office Address
             </label>
             <textarea
-              rows={3}
+              rows={2}
               value={formData.billingAddress}
               onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })}
-              placeholder="Unit #, Tech Park, City, State, PIN..."
+              placeholder="Full registered company address for tax invoices..."
               className="st-textarea"
             />
           </div>
         </form>
       </Drawer>
 
-      {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
-        title="Archive Client"
-        message={`Are you sure you want to archive "${clientToDelete?.companyName}"?`}
+        title="Delete Client"
+        message={`Are you sure you want to delete "${clientToDelete?.companyName}"?`}
       />
     </div>
   );

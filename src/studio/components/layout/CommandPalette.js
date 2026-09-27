@@ -10,6 +10,8 @@ import {
   X,
   ArrowRight,
   Sparkles,
+  PlusCircle,
+  Clock,
 } from 'lucide-react';
 import { useStudioBase } from '../../context/StudioBaseContext';
 import { getLeads } from '../../services/crmService';
@@ -20,6 +22,7 @@ import { getDeals } from '../../services/salesService';
 
 export default function CommandPalette({ isOpen, onClose }) {
   const navigate = useNavigate();
+  const { basePath } = useStudioBase();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -62,20 +65,28 @@ export default function CommandPalette({ isOpen, onClose }) {
         ]);
 
         const leadMatches = leads
-          .filter(l => (l.name || '').toLowerCase().includes(q) || (l.company || '').toLowerCase().includes(q))
+          .filter(
+            (l) =>
+              (l.name || '').toLowerCase().includes(q) ||
+              (l.company || '').toLowerCase().includes(q)
+          )
           .slice(0, 3)
-          .map(l => ({
+          .map((l) => ({
             id: l.id,
             title: l.name,
-            subtitle: `Lead • ${l.company || 'No Company'} • ${l.status}`,
+            subtitle: `Lead • ${l.company || 'Direct'} • ${l.status}`,
             icon: Users,
             url: '/crm/leads',
           }));
 
         const projectMatches = projects
-          .filter(p => (p.name || '').toLowerCase().includes(q) || (p.clientName || '').toLowerCase().includes(q))
+          .filter(
+            (p) =>
+              (p.name || '').toLowerCase().includes(q) ||
+              (p.clientName || '').toLowerCase().includes(q)
+          )
           .slice(0, 3)
-          .map(p => ({
+          .map((p) => ({
             id: p.id,
             title: p.name,
             subtitle: `Project • ${p.clientName} • ${p.status}`,
@@ -84,31 +95,43 @@ export default function CommandPalette({ isOpen, onClose }) {
           }));
 
         const invoiceMatches = invoices
-          .filter(i => (i.invoiceNumber || '').toLowerCase().includes(q) || (i.clientName || '').toLowerCase().includes(q))
+          .filter(
+            (i) =>
+              (i.invoiceNumber || '').toLowerCase().includes(q) ||
+              (i.clientName || '').toLowerCase().includes(q)
+          )
           .slice(0, 3)
-          .map(i => ({
+          .map((i) => ({
             id: i.id,
             title: i.invoiceNumber,
-            subtitle: `Invoice • ₹${i.total || 0} • ${i.clientName} • ${i.status}`,
+            subtitle: `Invoice • ₹${i.total || 0} • ${i.clientName}`,
             icon: Receipt,
             url: '/finance/invoices',
           }));
 
         const clientMatches = clients
-          .filter(c => (c.companyName || '').toLowerCase().includes(q) || (c.primaryContact || '').toLowerCase().includes(q))
+          .filter(
+            (c) =>
+              (c.companyName || '').toLowerCase().includes(q) ||
+              (c.primaryContact || '').toLowerCase().includes(q)
+          )
           .slice(0, 3)
-          .map(c => ({
+          .map((c) => ({
             id: c.id,
             title: c.companyName,
-            subtitle: `Client • ${c.primaryContact || ''} • ${c.status}`,
+            subtitle: `Client • ${c.primaryContact || ''}`,
             icon: Building2,
             url: '/clients',
           }));
 
         const dealMatches = deals
-          .filter(d => (d.name || '').toLowerCase().includes(q) || (d.company || '').toLowerCase().includes(q))
+          .filter(
+            (d) =>
+              (d.name || '').toLowerCase().includes(q) ||
+              (d.company || '').toLowerCase().includes(q)
+          )
           .slice(0, 3)
-          .map(d => ({
+          .map((d) => ({
             id: d.id,
             title: d.name,
             subtitle: `Deal • ₹${d.value || 0} • ${d.stage}`,
@@ -116,31 +139,41 @@ export default function CommandPalette({ isOpen, onClose }) {
             url: '/sales/pipeline',
           }));
 
-        setResults([...leadMatches, ...projectMatches, ...invoiceMatches, ...clientMatches, ...dealMatches]);
+        setResults([
+          ...leadMatches,
+          ...projectMatches,
+          ...invoiceMatches,
+          ...clientMatches,
+          ...dealMatches,
+        ]);
         setSelectedIndex(0);
       } catch (err) {
         console.error('Search error:', err);
       } finally {
         setLoading(false);
       }
-    }, 200);
+    }, 180);
 
     return () => clearTimeout(timer);
   }, [query, isOpen]);
 
   if (!isOpen) return null;
 
-  const quickNav = [
-    { title: 'Executive Dashboard', subtitle: 'View business health & revenue metrics', icon: TrendingUp, url: '/dashboard' },
-    { title: 'Pipeline Kanban', subtitle: 'Drag & drop deal stages', icon: TrendingUp, url: '/sales/pipeline' },
-    { title: 'GST Invoices', subtitle: 'Manage invoices, generate PDF', icon: Receipt, url: '/finance/invoices' },
-    { title: 'Projects & Tasks', subtitle: 'Active client engineering projects', icon: FolderGit2, url: '/projects' },
-    { title: 'Client Onboarding', subtitle: 'Track onboarding checklists', icon: Building2, url: '/clients/onboarding' },
+  const quickActions = [
+    { title: 'Create Lead', icon: PlusCircle, url: '/crm/leads', category: 'ACTION' },
+    { title: 'Create Client', icon: PlusCircle, url: '/clients', category: 'ACTION' },
+    { title: 'Create Deal', icon: PlusCircle, url: '/sales/pipeline', category: 'ACTION' },
+    { title: 'Create Invoice', icon: PlusCircle, url: '/finance/invoices', category: 'ACTION' },
   ];
 
-  const displayItems = query.trim() ? results : quickNav;
+  const recentNav = [
+    { title: 'Acme Technologies', subtitle: 'Enterprise Client Workspace', icon: Building2, url: '/clients' },
+    { title: 'Executive Overview', subtitle: 'Business Snapshot & Metrics', icon: TrendingUp, url: '/dashboard' },
+    { title: 'Active Deliveries', subtitle: 'Sprints & Milestones', icon: FolderGit2, url: '/projects' },
+    { title: 'Financial Invoices', subtitle: 'GST Billing & Collections', icon: Receipt, url: '/finance/invoices' },
+  ];
 
-  const { basePath } = useStudioBase();
+  const displayItems = query.trim() ? results : [...quickActions, ...recentNav];
 
   const handleSelect = (url) => {
     const fullUrl = basePath ? `${basePath}${url.startsWith('/') ? url : `/${url}`}` : url;
@@ -163,84 +196,107 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-start justify-center pt-16 sm:pt-24 px-4"
+      className="fixed inset-0 z-50 bg-[#090B10]/60 backdrop-blur-xs flex items-start justify-center pt-16 sm:pt-24 px-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-fadeIn"
+        className="w-full max-w-xl bg-white dark:bg-[#10131A] rounded-xl border border-[#E7E9EE] dark:border-[#222733] shadow-modal overflow-hidden flex flex-col animate-fadeIn"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDownList}
       >
         {/* Search Input Box */}
-        <div className="relative flex items-center px-4 py-3.5 border-b border-slate-200 dark:border-slate-800">
-          <Search className="w-4 h-4 text-slate-400 absolute left-4" />
+        <div className="relative flex items-center px-4 py-3.5 border-b border-[#E7E9EE] dark:border-[#222733]">
+          <Search className="w-4 h-4 text-[#9299A6] absolute left-4" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search leads, projects, invoices, clients..."
+            placeholder="Search leads, clients, projects, invoices..."
             autoFocus
-            className="w-full pl-8 pr-8 text-sm bg-transparent text-slate-900 dark:text-white placeholder-slate-400 outline-none"
+            className="w-full pl-8 pr-8 text-sm font-normal bg-transparent text-[#111318] dark:text-white placeholder-[#9299A6] outline-none"
           />
           {query ? (
-            <button onClick={() => setQuery('')} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <button
+              onClick={() => setQuery('')}
+              className="text-[#9299A6] hover:text-[#111318] dark:hover:text-white"
+            >
               <X className="w-4 h-4" />
             </button>
           ) : (
-            <kbd className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+            <kbd className="text-[10px] font-sans font-medium text-[#9299A6] bg-[#F6F7F9] dark:bg-[#151923] px-1.5 py-0.5 rounded border border-[#E7E9EE] dark:border-[#222733]">
               ESC
             </kbd>
           )}
         </div>
 
-        {/* Results / Quick Nav Container */}
+        {/* Results / Quick Actions Container */}
         <div className="max-h-80 overflow-y-auto studio-scrollbar p-2">
           {loading ? (
-            <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-              <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              <span>Searching across Brainlink...</span>
+            <div className="py-8 text-center text-xs text-[#9299A6] flex items-center justify-center gap-2">
+              <div className="w-3.5 h-3.5 border-2 border-[#315CFF] border-t-transparent rounded-full animate-spin" />
+              <span>Searching Brainlink Studio...</span>
             </div>
           ) : displayItems.length === 0 ? (
             <div className="py-10 text-center px-4">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No results found</p>
-              <p className="text-xs text-slate-400 mt-1">Try searching by client name, project code, or invoice ID.</p>
+              <p className="text-sm font-medium text-[#111318] dark:text-white">No results found</p>
+              <p className="text-xs text-[#9299A6] mt-1">Try keywords like client name, deal title, or invoice.</p>
             </div>
           ) : (
-            <div className="space-y-0.5">
-              <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                {query.trim() ? `Search Results (${results.length})` : 'Quick Navigation'}
-              </div>
+            <div className="space-y-1">
+              {!query.trim() && (
+                <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#9299A6]">
+                  Quick Actions
+                </div>
+              )}
               {displayItems.map((item, index) => {
                 const Icon = item.icon;
                 const isSelected = index === selectedIndex;
+                const isRecentDivider = !query.trim() && index === quickActions.length;
+
                 return (
-                  <div
-                    key={item.id || item.title}
-                    onClick={() => handleSelect(item.url)}
-                    onMouseEnter={() => setSelectedIndex(index)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200'
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                  <React.Fragment key={item.id || item.title + index}>
+                    {isRecentDivider && (
+                      <div className="px-2.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[#9299A6] border-t border-[#E7E9EE] dark:border-[#222733] mt-1">
+                        Recent & Suggested
+                      </div>
+                    )}
+                    <div
+                      onClick={() => handleSelect(item.url)}
+                      onMouseEnter={() => setSelectedIndex(index)}
+                      className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'bg-[#315CFF]/10 text-[#315CFF] dark:text-[#5D80FF]'
+                          : 'hover:bg-[#F6F7F9] dark:hover:bg-[#151923] text-[#111318] dark:text-[#F5F7FA]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                            isSelected
+                              ? 'bg-[#315CFF] text-white'
+                              : 'bg-[#F6F7F9] dark:bg-[#151923] text-[#626A78] dark:text-[#9AA3B2]'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold truncate">{item.title}</div>
+                          {item.subtitle && (
+                            <div className="text-[11px] text-[#9299A6] truncate">
+                              {item.subtitle}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <ArrowRight
+                        className={`w-3.5 h-3.5 shrink-0 ${
                           isSelected
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            ? 'text-[#315CFF] dark:text-[#5D80FF]'
+                            : 'text-[#B4B9C4] dark:text-[#414959]'
                         }`}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-semibold truncate">{item.title}</div>
-                        <div className="text-[11px] text-slate-400 truncate">{item.subtitle}</div>
-                      </div>
+                      />
                     </div>
-                    <ArrowRight className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`} />
-                  </div>
+                  </React.Fragment>
                 );
               })}
             </div>
@@ -248,21 +304,27 @@ export default function CommandPalette({ isOpen, onClose }) {
         </div>
 
         {/* Keyboard Helper Footer */}
-        <div className="px-4 py-2 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <div className="px-4 py-2 bg-[#F6F7F9] dark:bg-[#0C0E14] border-t border-[#E7E9EE] dark:border-[#222733] flex items-center justify-between text-[11px] text-[#9299A6]">
           <div className="flex items-center gap-3">
             <span>
-              <kbd className="font-mono bg-white dark:bg-slate-900 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 mr-1">↑</kbd>
-              <kbd className="font-mono bg-white dark:bg-slate-900 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 mr-1">↓</kbd>
+              <kbd className="font-sans font-medium bg-white dark:bg-[#10131A] px-1 py-0.5 rounded border border-[#E7E9EE] dark:border-[#222733] mr-1">
+                ↑
+              </kbd>
+              <kbd className="font-sans font-medium bg-white dark:bg-[#10131A] px-1 py-0.5 rounded border border-[#E7E9EE] dark:border-[#222733] mr-1">
+                ↓
+              </kbd>
               Navigate
             </span>
             <span>
-              <kbd className="font-mono bg-white dark:bg-slate-900 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 mr-1">↵</kbd>
+              <kbd className="font-sans font-medium bg-white dark:bg-[#10131A] px-1 py-0.5 rounded border border-[#E7E9EE] dark:border-[#222733] mr-1">
+                ↵
+              </kbd>
               Select
             </span>
           </div>
-          <span className="flex items-center gap-1 text-[10px]">
-            <Sparkles className="w-3 h-3 text-blue-500" />
-            Brainlink Universal Search
+          <span className="flex items-center gap-1 text-[10px] font-medium text-[#626A78] dark:text-[#9AA3B2]">
+            <Sparkles className="w-3 h-3 text-[#315CFF]" />
+            Brainlink Command Center
           </span>
         </div>
       </div>
