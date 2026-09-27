@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { StudioBaseProvider, useStudioBase } from './context/StudioBaseContext';
+import { ThemeProvider } from './context/ThemeContext';
 import StudioLayout from './components/layout/StudioLayout';
 import './studio.css';
 
@@ -40,6 +41,20 @@ const UsersManagement = lazy(() => import('./pages/admin/UsersManagement'));
 const AuditLogs = lazy(() => import('./pages/admin/AuditLogs'));
 const Settings = lazy(() => import('./pages/admin/Settings'));
 
+function StudioLoader({ label }) {
+  return (
+    <div className="studio-shell min-h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative w-11 h-11">
+          <div className="absolute inset-0 rounded-[13px] bg-gradient-to-br from-[#3B5BFF] via-[#6A5CFF] to-[#9A5CFF] animate-pulse" />
+          <div className="absolute inset-0 flex items-center justify-center font-bold text-white text-sm">BL</div>
+        </div>
+        {label && <span className="text-[12px] font-medium text-[var(--st-text-muted)]">{label}</span>}
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }) {
   const { currentUser, loading } = useAuth();
   const { basePath } = useStudioBase();
@@ -47,12 +62,7 @@ function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090B10] flex items-center justify-center text-[#9AA3B2] text-xs font-sans">
-        <div className="flex flex-col items-center gap-2.5">
-          <div className="w-6 h-6 rounded-full border-2 border-[#315CFF] border-t-transparent animate-spin" />
-          <span className="text-[11px] font-medium tracking-wide">Loading Studio...</span>
-        </div>
-      </div>
+      <StudioLoader label="Loading Studio…" />
     );
   }
 
@@ -160,19 +170,15 @@ function StudioRoutes() {
 export default function StudioApp({ basePath = '/studio' }) {
   return (
     <StudioBaseProvider basePath={basePath}>
-      <AuthProvider>
-        <ToastProvider>
-          <Suspense
-            fallback={
-              <div className="min-h-screen bg-slate-900 flex items-center justify-center text-slate-400 text-xs">
-                <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-              </div>
-            }
-          >
-            <StudioRoutes />
-          </Suspense>
-        </ToastProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <Suspense fallback={<StudioLoader />}>
+              <StudioRoutes />
+            </Suspense>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </StudioBaseProvider>
   );
 }

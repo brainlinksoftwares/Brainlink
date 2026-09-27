@@ -13,31 +13,32 @@ export default function EmptyState({
   return (
     <div
       className={`text-center flex flex-col items-center justify-center mx-auto ${
-        compact ? 'py-8 px-4' : 'py-12 px-6 max-w-sm'
+        compact ? 'py-8 px-4' : 'py-14 px-6 max-w-sm'
       }`}
     >
       {Icon && (
-        <div className="w-9 h-9 rounded-lg bg-[#F6F7F9] dark:bg-[#151923] text-[#626A78] dark:text-[#9AA3B2] flex items-center justify-center mb-3 border border-[#E7E9EE] dark:border-[#222733]">
-          <Icon className="w-4 h-4" />
+        <div className="relative mb-4">
+          <div className="absolute inset-0 rounded-2xl bg-[image:var(--st-gradient)] opacity-25 blur-xl" />
+          <div className="relative w-12 h-12 rounded-2xl bg-[var(--st-surface)] border border-[var(--st-border)] shadow-[var(--st-shadow-sm)] text-[var(--st-accent-text)] flex items-center justify-center">
+            <Icon className="w-5 h-5" />
+          </div>
         </div>
       )}
-      <h3 className="text-[13px] font-semibold text-[#111318] dark:text-white">
-        {title}
-      </h3>
+      <h3 className="text-[14px] font-semibold tracking-tight text-[var(--st-text-primary)]">{title}</h3>
       {description && (
-        <p className="text-[12px] text-[#626A78] dark:text-[#9AA3B2] mt-1 max-w-xs leading-relaxed">
-          {description}
-        </p>
+        <p className="text-[12.5px] text-[var(--st-text-muted)] mt-1 max-w-xs leading-relaxed">{description}</p>
       )}
-      <div className="flex items-center gap-2 mt-4">
-        {actionLabel && onAction && (
-          <button onClick={onAction} className="st-btn-primary st-btn-sm">
-            <Plus className="w-3.5 h-3.5" />
-            <span>{actionLabel}</span>
-          </button>
-        )}
-        {secondaryAction}
-      </div>
+      {((actionLabel && onAction) || secondaryAction) && (
+        <div className="flex items-center gap-2 mt-5">
+          {actionLabel && onAction && (
+            <button onClick={onAction} className="st-btn-primary st-btn-sm">
+              <Plus className="w-3.5 h-3.5" />
+              <span>{actionLabel}</span>
+            </button>
+          )}
+          {secondaryAction}
+        </div>
+      )}
     </div>
   );
 }

@@ -7,28 +7,26 @@ import {
   AlertCircle,
   Plus,
   RefreshCw,
-  Clock,
   ArrowRight,
   Layers,
   CheckCircle2,
   Calendar,
   CreditCard,
   FileCheck2,
+  Users,
+  Wallet,
+  Trophy,
+  Activity,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import StatCard from '../../components/ui/StatCard';
 import ActivityTimeline from '../../components/common/ActivityTimeline';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { formatINR } from '../../utils/formatters';
+import { formatINR, formatDate } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useStudioPath } from '../../context/StudioBaseContext';
 import { getLeads, getActivities } from '../../services/crmService';
 import { getDeals } from '../../services/salesService';
 import { getProjects } from '../../services/projectService';
@@ -36,7 +34,29 @@ import { getInvoices, getPayments, getExpenses } from '../../services/financeSer
 
 const DASHBOARD_CACHE_KEY = 'brainlink_dashboard_cache_v2';
 
-function getCachedDashboard() {
+const PERIODS = [
+  { id: 'week', label: '7D', days: 7, name: 'last 7 days' },
+  { id: 'month', label: '30D', days: 30, name: 'last 30 days' },
+  { id: 'quarter', label: '90D', days: 90, name: 'last 90 days' },
+  { id: 'year', label: '12M', days: 365, name: 'last 12 months' },
+];
+
+// Open stages are ordinal → one-hue ramp (validated light & dark). "Won" is an
+// outcome, so it takes the success status color and always carries its label.
+const STAGES = [
+  { key: 'New', label: 'New', filter: ['New Lead', 'New'] },
+  { key: 'Qualified', label: 'Qualified', filter: ['Qualified', 'Contacted'] },
+  { key: 'Meeting', label: 'Meeting', filter: ['Meeting', 'Demo', 'Meeting Scheduled'] },
+  { key: 'Proposal', label: 'Proposal', filter: ['Proposal', 'Quotation', 'Proposal Sent'] },
+  { key: 'Negotiation', label: 'Negotiation', filter: ['Negotiation'] },
+  { key: 'Won', label: 'Won', filter: ['Won', 'Closed Won'] },
+];
+const STAGE_COLORS = {
+  light: ['#86b6ef', '#5598e7', '#2a78d6', '#1c5cab', '#104281', '#10B981'],
+  dark: ['#184f95', '#256abf', '#3987e5', '#6da7ec', '#9ec5f4', '#34D399'],
+};
+
+function readCache() {
   try {
     const raw = sessionStorage.getItem(DASHBOARD_CACHE_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -45,28 +65,97 @@ function getCachedDashboard() {
   }
 }
 
+// Firestore Timestamp | {seconds} (from JSON cache) | ISO/date string → Date | null
+function toDate(value) {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') return value.toDate();
+  if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function sumInRange(rows, dateKey, from, to) {
+  return rows.reduce((sum, row) => {
+    const d = toDate(row[dateKey] || row.createdAt);
+    return d && d >= from && d < to ? sum + (Number(row.amount) || 0) : sum;
+  }, 0);
+}
+
+function percentChange(current, previous) {
+  if (!previous) return null;
+  const pct = ((current - previous) / previous) * 100;
+  return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+}
+
+function compactINR(v) {
+  if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)}Cr`;
+  if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+  if (v >= 1000) return `₹${Math.round(v / 1000)}k`;
+  return `₹${v}`;
+}
+
+function Panel({ title, subtitle, action, children, className = '' }) {
+  return (
+    <section className={`st-card p-5 ${className}`}>
+      <header className="st-card-header">
+        <div className="min-w-0">
+          <h2 className="st-card-title">{title}</h2>
+          {subtitle && <p className="st-card-subtitle truncate">{subtitle}</p>}
+        </div>
+        {action}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function InlineEmpty({ icon: Icon, title, description, actionLabel, onAction }) {
+  return (
+    <div className="py-10 px-4 text-center flex flex-col items-center">
+      <span className="st-icon-chip st-tone-blue w-11 h-11 rounded-xl mb-3">
+        <Icon className="w-5 h-5" />
+      </span>
+      <h3 className="text-[13.5px] font-semibold text-[var(--st-text-primary)]">{title}</h3>
+      <p className="text-[12.5px] text-[var(--st-text-muted)] mt-1 max-w-xs leading-relaxed">{description}</p>
+      {actionLabel && (
+        <button onClick={onAction} className="st-btn-secondary st-btn-sm mt-4">
+          <Plus className="w-3.5 h-3.5" />
+          <span>{actionLabel}</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const toPath = useStudioPath();
+  const go = useCallback((path) => navigate(toPath(path)), [navigate, toPath]);
   const { userProfile } = useAuth();
+  const { resolvedTheme } = useTheme();
   const toast = useToast();
+  const isDark = resolvedTheme === 'dark';
 
-  const cached = getCachedDashboard();
-  const [loading, setLoading] = useState(!cached);
-  const [period, setPeriod] = useState('month'); // 'today' | 'week' | 'month' | 'quarter'
+  // Read the session cache once; a fresh object per render would retrigger fetching forever.
+  const [initialCache] = useState(readCache);
+  const [loading, setLoading] = useState(!initialCache);
+  const [refreshing, setRefreshing] = useState(false);
+  const [period, setPeriod] = useState('month');
+  const [data, setData] = useState(() => ({
+    leads: initialCache?.leads || [],
+    deals: initialCache?.deals || [],
+    projects: initialCache?.projects || [],
+    invoices: initialCache?.invoices || [],
+    payments: initialCache?.payments || [],
+    expenses: initialCache?.expenses || [],
+    activities: initialCache?.activities || [],
+  }));
 
-  // Hydrate instantly from cache if available (0ms first paint)
-  const [leads, setLeads] = useState(cached?.leads || []);
-  const [deals, setDeals] = useState(cached?.deals || []);
-  const [projects, setProjects] = useState(cached?.projects || []);
-  const [invoices, setInvoices] = useState(cached?.invoices || []);
-  const [payments, setPayments] = useState(cached?.payments || []);
-  const [expenses, setExpenses] = useState(cached?.expenses || []);
-  const [activities, setActivities] = useState(cached?.activities || []);
-
-  const fetchData = useCallback(async () => {
-    try {
-      const [leadsData, dealsData, projectsData, invoicesData, paymentsData, expensesData, activitiesData] =
-        await Promise.all([
+  const fetchData = useCallback(
+    async ({ manual = false } = {}) => {
+      if (manual) setRefreshing(true);
+      try {
+        const [leads, deals, projects, invoices, payments, expenses, activities] = await Promise.all([
           getLeads(),
           getDeals(),
           getProjects(),
@@ -75,391 +164,407 @@ export default function Dashboard() {
           getExpenses(),
           getActivities(10),
         ]);
-
-      setLeads(leadsData || []);
-      setDeals(dealsData || []);
-      setProjects(projectsData || []);
-      setInvoices(invoicesData || []);
-      setPayments(paymentsData || []);
-      setExpenses(expensesData || []);
-      setActivities(activitiesData || []);
-
-      // Persist to session storage for instant subsequent visits
-      try {
-        sessionStorage.setItem(
-          DASHBOARD_CACHE_KEY,
-          JSON.stringify({
-            leads: leadsData || [],
-            deals: dealsData || [],
-            projects: projectsData || [],
-            invoices: invoicesData || [],
-            payments: paymentsData || [],
-            expenses: expensesData || [],
-            activities: activitiesData || [],
-          })
-        );
-      } catch (e) {}
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      if (!cached) {
+        const next = {
+          leads: leads || [],
+          deals: deals || [],
+          projects: projects || [],
+          invoices: invoices || [],
+          payments: payments || [],
+          expenses: expenses || [],
+          activities: activities || [],
+        };
+        setData(next);
+        try {
+          sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(next));
+        } catch (e) {}
+        if (manual) toast.success('Dashboard refreshed');
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
         toast.error('Failed to load dashboard metrics');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [toast, cached]);
+    },
+    [toast]
+  );
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Derived Business Metrics
-  const activeDeals = deals.filter((d) => d.stage !== 'Won' && d.stage !== 'Lost');
-  const pipelineValue = activeDeals.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
+  const { leads, deals, projects, invoices, payments, expenses, activities } = data;
+  const activePeriod = PERIODS.find((p) => p.id === period);
 
-  const activeProjects = projects.filter(
-    (p) => p.status === 'Active' || p.status === 'In Progress' || !p.status
-  );
-  const projectsNeedAttention = projects.filter(
-    (p) => p.status === 'Delayed' || p.status === 'At Risk' || p.health === 'At Risk'
-  );
+  // ---- Derived metrics (all from live records) ----
+  const metrics = useMemo(() => {
+    const now = new Date();
+    const dayMs = 86400000;
+    const from = new Date(now.getTime() - activePeriod.days * dayMs);
+    const prevFrom = new Date(from.getTime() - activePeriod.days * dayMs);
+    const liveExpenses = expenses.filter((e) => !e.reversed);
 
-  const paymentsReceived = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-  const totalExpenses = expenses.filter((e) => !e.reversed).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  const netRevenue = paymentsReceived - totalExpenses;
+    const revenue = sumInRange(payments, 'paymentDate', from, now);
+    const prevRevenue = sumInRange(payments, 'paymentDate', prevFrom, from);
+    const spend = sumInRange(liveExpenses, 'date', from, now);
 
-  const outstandingReceivables = invoices
-    .filter((i) => i.status !== 'Cancelled')
-    .reduce((sum, i) => {
+    const activeDeals = deals.filter((d) => d.stage !== 'Won' && d.stage !== 'Lost');
+    const pipelineValue = activeDeals.reduce((s, d) => s + (Number(d.value) || 0), 0);
+    const weightedPipeline = activeDeals.reduce(
+      (s, d) => s + (Number(d.value) || 0) * ((Number(d.probability) || 0) / 100),
+      0
+    );
+    const closed = deals.filter((d) => d.stage === 'Won' || d.stage === 'Lost');
+    const winRate = closed.length
+      ? Math.round((closed.filter((d) => d.stage === 'Won').length / closed.length) * 100)
+      : null;
+
+    const activeProjects = projects.filter(
+      (p) => p.status === 'Active' || p.status === 'In Progress' || !p.status
+    );
+    const atRiskProjects = projects.filter(
+      (p) => p.status === 'Delayed' || p.status === 'At Risk' || p.health === 'At Risk'
+    );
+
+    const openInvoices = invoices.filter((i) => i.status !== 'Cancelled' && i.status !== 'Paid');
+    const receivables = openInvoices.reduce((s, i) => {
       const remaining =
         i.outstandingAmount !== undefined
           ? Number(i.outstandingAmount)
           : Number(i.total || 0) - (Number(i.paidAmount) || 0);
-      return sum + Math.max(0, remaining);
+      return s + Math.max(0, remaining);
     }, 0);
+    const overdueInvoices = openInvoices.filter((i) => {
+      const due = toDate(i.dueDate);
+      return due && due < now;
+    });
 
-  const overdueInvoices = invoices.filter((i) => {
-    if (i.status === 'Paid' || i.status === 'Cancelled') return false;
-    if (!i.dueDate) return false;
-    return new Date(i.dueDate) < new Date();
-  });
+    const newLeads = leads.filter((l) => {
+      const d = toDate(l.createdAt);
+      return d && d >= from;
+    }).length;
 
-  // Pipeline stage breakdown
-  const stageDefinitions = [
-    { key: 'New', label: 'New Leads', filter: ['New Lead', 'New'] },
-    { key: 'Qualified', label: 'Qualified', filter: ['Qualified', 'Contacted'] },
-    { key: 'Meeting', label: 'Meeting', filter: ['Meeting', 'Demo'] },
-    { key: 'Proposal', label: 'Proposal', filter: ['Proposal', 'Quotation'] },
-    { key: 'Negotiation', label: 'Negotiation', filter: ['Negotiation'] },
-    { key: 'Won', label: 'Won Deals', filter: ['Won', 'Closed Won'] },
-  ];
+    return {
+      revenue,
+      revenueTrend: percentChange(revenue, prevRevenue),
+      net: revenue - spend,
+      activeDeals,
+      pipelineValue,
+      weightedPipeline,
+      winRate,
+      activeProjects,
+      atRiskProjects,
+      receivables,
+      overdueInvoices,
+      newLeads,
+    };
+  }, [payments, expenses, deals, projects, invoices, leads, activePeriod]);
+
+  // Monthly collections for the last 6 months, bucketed from real payment dates
+  const revenueSeries = useMemo(() => {
+    const now = new Date();
+    const buckets = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        month: d.toLocaleString('en-IN', { month: 'short' }),
+        revenue: 0,
+      });
+    }
+    payments.forEach((p) => {
+      const d = toDate(p.paymentDate || p.createdAt);
+      if (!d) return;
+      const bucket = buckets.find((b) => b.key === `${d.getFullYear()}-${d.getMonth()}`);
+      if (bucket) bucket.revenue += Number(p.amount) || 0;
+    });
+    return buckets;
+  }, [payments]);
+  const sixMonthTotal = revenueSeries.reduce((s, b) => s + b.revenue, 0);
 
   const stageBreakdown = useMemo(() => {
-    const totalCount = deals.length || 1;
-    return stageDefinitions.map((stg) => {
+    const palette = STAGE_COLORS[isDark ? 'dark' : 'light'];
+    return STAGES.map((stg, idx) => {
       const matched = deals.filter((d) => stg.filter.includes(d.stage));
-      const count = matched.length;
-      const value = matched.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
-      const percentage = Math.round((count / totalCount) * 100);
       return {
         ...stg,
-        count,
-        value,
-        percentage,
+        color: palette[idx],
+        count: matched.length,
+        value: matched.reduce((s, d) => s + (Number(d.value) || 0), 0),
       };
     });
-  }, [deals]);
+  }, [deals, isDark]);
+  const stagedCount = stageBreakdown.reduce((s, stg) => s + stg.count, 0);
 
-  // Revenue chart dataset (uses real payment records or monthly simulation if available)
-  const revenueTrendData = useMemo(() => {
-    if (paymentsReceived === 0) return [];
-    return [
-      { month: 'Apr', revenue: Math.round(paymentsReceived * 0.42) },
-      { month: 'May', revenue: Math.round(paymentsReceived * 0.58) },
-      { month: 'Jun', revenue: Math.round(paymentsReceived * 0.7) },
-      { month: 'Jul', revenue: Math.round(paymentsReceived * 0.82) },
-      { month: 'Aug', revenue: Math.round(paymentsReceived * 0.91) },
-      { month: 'Sep', revenue: Math.round(paymentsReceived) },
-    ];
-  }, [paymentsReceived]);
+  const userName = userProfile?.displayName?.split(' ')[0] || 'there';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const today = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }).format(
+    new Date()
+  );
 
-  // Greeting
-  const userName = userProfile?.displayName?.split(' ')[0] || 'Aaditya';
-  const currentHour = new Date().getHours();
-  const greeting = currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
+  const attentionCount = metrics.overdueInvoices.length + metrics.atRiskProjects.length;
 
-  return (
-    <div className="space-y-6">
-      {/* 1. Header & Context Period Selector */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[#E7E9EE] dark:border-[#222733]">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#111318] dark:text-white">
-            {greeting}, {userName}
-          </h1>
-          <p className="text-xs text-[#626A78] dark:text-[#9AA3B2] mt-0.5 font-normal">
-            Here's your business overview for today.
-          </p>
+  const chartInk = isDark
+    ? { tick: '#687186', grid: '#1E2330', stroke: '#6680FF', tooltipBg: '#131722', tooltipBorder: '#2A3142', text: '#F2F4F8' }
+    : { tick: '#8C93A3', grid: '#EEF0F4', stroke: '#3B5BFF', tooltipBg: '#FFFFFF', tooltipBorder: '#E4E7EE', text: '#0E1117' };
+
+  const quickActions = [
+    { label: 'Add lead', icon: Users, path: '/crm/leads', tone: 'blue' },
+    { label: 'New proposal', icon: FileCheck2, path: '/sales/proposals', tone: 'violet' },
+    { label: 'Create invoice', icon: Receipt, path: '/finance/invoices', tone: 'emerald' },
+    { label: 'Record payment', icon: CreditCard, path: '/finance/payments', tone: 'cyan' },
+    { label: 'Schedule meeting', icon: Calendar, path: '/sales/meetings', tone: 'amber' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="space-y-5" aria-busy="true">
+        <div className="st-skeleton h-[148px] rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="st-skeleton h-[124px] rounded-[13px]" />
+          ))}
         </div>
-
-        <div className="flex items-center gap-3">
-          {/* Period Selector */}
-          <div className="flex items-center bg-[#F6F7F9] dark:bg-[#151923] p-0.5 rounded-lg border border-[#E7E9EE] dark:border-[#222733] text-xs">
-            {[
-              { id: 'today', label: 'Today' },
-              { id: 'week', label: 'This Week' },
-              { id: 'month', label: 'This Month' },
-              { id: 'quarter', label: 'This Quarter' },
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setPeriod(t.id)}
-                className={`px-2.5 py-1 rounded-md font-medium text-xs transition-all ${
-                  period === t.id
-                    ? 'bg-white dark:bg-[#10131A] text-[#111318] dark:text-white shadow-2xs font-semibold'
-                    : 'text-[#626A78] dark:text-[#9AA3B2] hover:text-[#111318]'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Quick Refresh */}
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="st-btn-secondary st-btn-sm"
-            title="Refresh metrics"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-
-          {/* New Lead */}
-          <button
-            onClick={() => navigate('/crm/leads')}
-            className="st-btn-secondary st-btn-sm hidden sm:inline-flex"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Lead</span>
-          </button>
-
-          {/* New Deal / Invoice */}
-          <button
-            onClick={() => navigate('/finance/invoices')}
-            className="st-btn-primary st-btn-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Invoice</span>
-          </button>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+          <div className="st-skeleton h-[340px] rounded-[13px] xl:col-span-8" />
+          <div className="st-skeleton h-[340px] rounded-[13px] xl:col-span-4" />
         </div>
       </div>
+    );
+  }
 
-      {/* 2. Compact Executive KPI Metrics Row (Subtle Separators) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+  return (
+    <div className="space-y-5 st-stagger">
+      {/* Hero */}
+      <section className="st-hero p-5 sm:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[12px] font-medium text-[var(--st-text-muted)]">
+              <span className="st-live-dot" />
+              <span>{today}</span>
+            </div>
+            <h1 className="mt-2 text-[26px] sm:text-[30px] leading-tight font-bold tracking-[-0.03em] text-[var(--st-text-primary)]">
+              {greeting}, <span className="st-gradient-text">{userName}</span>
+            </h1>
+            <p className="mt-1.5 text-[13.5px] text-[var(--st-text-secondary)] max-w-xl">
+              {attentionCount > 0
+                ? `${attentionCount} item${attentionCount > 1 ? 's' : ''} need${attentionCount === 1 ? 's' : ''} your attention · ${metrics.activeDeals.length} open deals worth ${formatINR(metrics.pipelineValue)}.`
+                : `Everything is on track · ${metrics.activeDeals.length} open deals worth ${formatINR(metrics.pipelineValue)}.`}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="st-segmented" role="group" aria-label="Reporting period">
+              {PERIODS.map((p) => (
+                <button key={p.id} aria-pressed={period === p.id} onClick={() => setPeriod(p.id)} title={p.name}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => fetchData({ manual: true })}
+              disabled={refreshing}
+              className="st-btn-secondary st-btn-sm w-8 px-0"
+              title="Refresh metrics"
+              aria-label="Refresh metrics"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+            <button onClick={() => go('/finance/invoices')} className="st-btn-primary st-btn-sm">
+              <Plus className="w-3.5 h-3.5" />
+              <span>New invoice</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <div className="mt-5 pt-5 border-t border-[var(--st-border-subtle)] flex gap-2 overflow-x-auto studio-scrollbar -mx-1 px-1 pb-1">
+          {quickActions.map((a) => {
+            const Icon = a.icon;
+            return (
+              <button
+                key={a.label}
+                onClick={() => go(a.path)}
+                className="group shrink-0 flex items-center gap-2.5 h-10 pl-1.5 pr-3.5 rounded-[11px] bg-[var(--st-surface)] border border-[var(--st-border)] hover:border-[var(--st-border-strong)] shadow-[var(--st-shadow-xs)] hover:shadow-[var(--st-shadow-sm)] cursor-pointer transition-all"
+              >
+                <span className={`st-icon-chip w-7 h-7 rounded-lg st-tone-${a.tone}`}>
+                  <Icon className="w-3.5 h-3.5" />
+                </span>
+                <span className="text-[12.5px] font-semibold text-[var(--st-text-primary)]">{a.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
-          title="Revenue"
-          value={formatINR(paymentsReceived)}
-          subtext={`vs last month • Net: ${formatINR(netRevenue)}`}
-          trend="+18.4%"
-          icon={Receipt}
-          onClick={() => navigate('/finance')}
+          title={`Collected · ${activePeriod.label}`}
+          value={formatINR(metrics.revenue)}
+          trend={metrics.revenueTrend || undefined}
+          subtext={`Net ${formatINR(metrics.net)} after expenses`}
+          icon={Wallet}
+          color="emerald"
+          onClick={() => go('/finance')}
         />
         <StatCard
-          title="Pipeline"
-          value={formatINR(pipelineValue)}
-          subtext={`${activeDeals.length} active deals`}
-          trend={activeDeals.length > 0 ? `${activeDeals.length} active` : 'Empty'}
+          title="Open pipeline"
+          value={formatINR(metrics.pipelineValue)}
+          subtext={`${metrics.activeDeals.length} deals · weighted ${formatINR(Math.round(metrics.weightedPipeline))}`}
           icon={TrendingUp}
-          onClick={() => navigate('/sales/pipeline')}
+          color="blue"
+          onClick={() => go('/sales/pipeline')}
         />
         <StatCard
           title="Receivables"
-          value={formatINR(outstandingReceivables)}
-          subtext={`${overdueInvoices.length} overdue`}
-          trend={overdueInvoices.length > 0 ? `-${overdueInvoices.length} overdue` : 'Clean'}
+          value={formatINR(metrics.receivables)}
+          trend={metrics.overdueInvoices.length > 0 ? `-${metrics.overdueInvoices.length} overdue` : undefined}
+          subtext={metrics.overdueInvoices.length > 0 ? 'needs follow-up' : 'Nothing overdue'}
           icon={AlertCircle}
-          onClick={() => navigate('/finance/invoices')}
+          color={metrics.overdueInvoices.length > 0 ? 'rose' : 'violet'}
+          onClick={() => go('/finance/invoices')}
         />
         <StatCard
-          title="Projects"
-          value={activeProjects.length}
-          subtext={`${projectsNeedAttention.length} need attention`}
-          trend={projectsNeedAttention.length > 0 ? `${projectsNeedAttention.length} alert` : 'On track'}
+          title="Active projects"
+          value={metrics.activeProjects.length}
+          subtext={
+            metrics.atRiskProjects.length > 0
+              ? `${metrics.atRiskProjects.length} at risk`
+              : `${metrics.newLeads} new leads · ${activePeriod.label}`
+          }
           icon={FolderGit2}
-          onClick={() => navigate('/projects')}
+          color={metrics.atRiskProjects.length > 0 ? 'amber' : 'cyan'}
+          onClick={() => go('/projects')}
         />
       </div>
 
-      {/* 3. Asymmetric Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left Column (7 cols): Revenue Overview Chart & Active Projects Table */}
-        <div className="lg:col-span-7 space-y-5">
-          {/* Revenue Overview Financial Chart */}
-          <div className="st-card p-4 sm:p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E7E9EE] dark:border-[#222733]">
-              <div>
-                <div className="text-[11px] font-semibold text-[#626A78] dark:text-[#9AA3B2] uppercase tracking-wider">
-                  Revenue Trajectory
+      {/* Main grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <div className="xl:col-span-8 space-y-5 min-w-0">
+          <Panel
+            title="Revenue collected"
+            subtitle="Payments received per month · last 6 months"
+            action={
+              <div className="text-right shrink-0">
+                <div className="text-lg font-bold tracking-tight text-[var(--st-text-primary)] tabular-nums">
+                  {formatINR(sixMonthTotal)}
                 </div>
-                <div className="text-lg font-bold text-[#111318] dark:text-white mt-0.5">
-                  {formatINR(paymentsReceived)}{' '}
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    +18.4%
-                  </span>{' '}
-                  <span className="text-[11px] font-normal text-[#9299A6]">vs previous period</span>
-                </div>
+                <div className="text-[11px] text-[var(--st-text-muted)]">6-month total</div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-[#315CFF] border border-blue-100 dark:border-blue-900/50">
-                  YTD Inflow
-                </span>
-              </div>
-            </div>
-
-            {/* Chart Area or Clean Meaningful Empty State */}
-            {paymentsReceived === 0 ? (
-              <div className="py-12 px-4 text-center flex flex-col items-center justify-center">
-                <div className="w-10 h-10 rounded-full bg-[#F6F7F9] dark:bg-[#151923] text-[#315CFF] flex items-center justify-center mb-3 border border-[#E7E9EE] dark:border-[#222733]">
-                  <CreditCard className="w-4 h-4" />
-                </div>
-                <h4 className="text-xs font-semibold text-[#111318] dark:text-white">
-                  No revenue data yet
-                </h4>
-                <p className="text-[11px] text-[#626A78] dark:text-[#9AA3B2] mt-0.5 max-w-xs">
-                  Revenue trajectory and financial trends will appear here once customer payments are recorded.
-                </p>
-                <button
-                  onClick={() => navigate('/finance/payments')}
-                  className="st-btn-primary st-btn-sm mt-3"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Record Payment</span>
-                </button>
-              </div>
+            }
+          >
+            {sixMonthTotal === 0 ? (
+              <InlineEmpty
+                icon={CreditCard}
+                title="No payments in the last 6 months"
+                description="Monthly collections will chart here as soon as customer payments are recorded."
+                actionLabel="Record payment"
+                onAction={() => go('/finance/payments')}
+              />
             ) : (
-              <div className="h-56 mt-4">
+              <div className="h-64 mt-3 -ml-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueTrendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <AreaChart data={revenueSeries} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#315CFF" stopOpacity={0.22} />
-                        <stop offset="95%" stopColor="#315CFF" stopOpacity={0.0} />
+                      <linearGradient id="dashRevGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={chartInk.stroke} stopOpacity={isDark ? 0.35 : 0.22} />
+                        <stop offset="100%" stopColor={chartInk.stroke} stopOpacity={0} />
                       </linearGradient>
                     </defs>
+                    <CartesianGrid vertical={false} stroke={chartInk.grid} />
                     <XAxis
                       dataKey="month"
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 11, fill: '#9299A6', fontFamily: 'Outfit' }}
+                      tickMargin={8}
+                      tick={{ fontSize: 11.5, fill: chartInk.tick, fontFamily: 'Outfit' }}
                     />
                     <YAxis
+                      width={56}
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 10, fill: '#9299A6', fontFamily: 'Outfit' }}
-                      tickFormatter={(v) => `₹${Math.round(v / 1000)}k`}
+                      tick={{ fontSize: 11, fill: chartInk.tick, fontFamily: 'Outfit' }}
+                      tickFormatter={compactINR}
                     />
                     <Tooltip
+                      cursor={{ stroke: chartInk.tick, strokeDasharray: '3 3' }}
                       contentStyle={{
-                        backgroundColor: '#10131A',
-                        border: '1px solid #222733',
-                        borderRadius: '8px',
-                        fontSize: '12px',
+                        backgroundColor: chartInk.tooltipBg,
+                        border: `1px solid ${chartInk.tooltipBorder}`,
+                        borderRadius: 10,
+                        fontSize: 12,
                         fontFamily: 'Outfit',
-                        color: '#FFFFFF',
+                        boxShadow: '0 12px 28px -8px rgba(0,0,0,0.25)',
                       }}
+                      labelStyle={{ color: chartInk.tick, fontWeight: 500, marginBottom: 2 }}
+                      itemStyle={{ color: chartInk.text, fontWeight: 600 }}
                       formatter={(val) => [formatINR(val), 'Collected']}
                     />
                     <Area
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#315CFF"
-                      strokeWidth={2.2}
-                      fillOpacity={1}
-                      fill="url(#revGrad)"
+                      stroke={chartInk.stroke}
+                      strokeWidth={2}
+                      fill="url(#dashRevGrad)"
+                      activeDot={{ r: 5, strokeWidth: 2, stroke: isDark ? '#0E1119' : '#FFFFFF' }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             )}
-          </div>
+          </Panel>
 
-          {/* Active Projects Dense Premium Table */}
-          <div className="st-card p-4 sm:p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E7E9EE] dark:border-[#222733]">
-              <div>
-                <h3 className="text-xs font-semibold text-[#111318] dark:text-white uppercase tracking-wider">
-                  Active Projects ({activeProjects.length})
-                </h3>
-                <p className="text-[11px] text-[#626A78] dark:text-[#9AA3B2]">
-                  Delivery sprints, milestone progress, and engineering deadlines
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/projects')}
-                className="text-xs text-[#315CFF] hover:underline inline-flex items-center gap-1 font-medium"
-              >
-                View all <ArrowRight className="w-3 h-3" />
+          <Panel
+            title="Active projects"
+            subtitle={`${metrics.activeProjects.length} in delivery`}
+            action={
+              <button onClick={() => go('/projects')} className="st-link">
+                View all <ArrowRight className="w-3.5 h-3.5" />
               </button>
-            </div>
-
-            {activeProjects.length === 0 ? (
-              <div className="py-10 text-center flex flex-col items-center justify-center">
-                <FolderGit2 className="w-7 h-7 text-[#9299A6] mb-2" />
-                <p className="text-xs font-medium text-[#111318] dark:text-white">
-                  No active projects currently in flight
-                </p>
-                <p className="text-[11px] text-[#626A78] dark:text-[#9AA3B2] mt-0.5">
-                  Deliveries will display milestone completion and timeline status.
-                </p>
-                <button
-                  onClick={() => navigate('/projects')}
-                  className="st-btn-secondary st-btn-sm mt-3"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Create Project</span>
-                </button>
-              </div>
+            }
+          >
+            {metrics.activeProjects.length === 0 ? (
+              <InlineEmpty
+                icon={FolderGit2}
+                title="No projects in flight"
+                description="Active deliveries will show milestone progress and deadlines here."
+                actionLabel="Create project"
+                onAction={() => go('/projects')}
+              />
             ) : (
-              <div className="overflow-x-auto mt-2">
-                <table className="w-full text-left text-xs">
+              <div className="overflow-x-auto -mx-5">
+                <table className="st-table">
                   <thead>
-                    <tr className="border-b border-[#E7E9EE] dark:border-[#222733] text-[10px] font-semibold uppercase tracking-wider text-[#9299A6]">
-                      <th className="py-2.5 px-2">Project</th>
-                      <th className="py-2.5 px-2">Client</th>
-                      <th className="py-2.5 px-2 w-36">Progress</th>
-                      <th className="py-2.5 px-2 text-right">Deadline</th>
+                    <tr>
+                      <th>Project</th>
+                      <th>Client</th>
+                      <th className="w-44">Progress</th>
+                      <th className="text-right">Target</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#F0F2F5] dark:divide-[#191E2A]">
-                    {activeProjects.slice(0, 5).map((p) => {
-                      const progress = Number(p.progress || 65);
+                  <tbody>
+                    {metrics.activeProjects.slice(0, 5).map((p) => {
+                      const progress = Math.min(100, Math.max(0, Number(p.progress) || 0));
                       return (
-                        <tr
-                          key={p.id}
-                          onClick={() => navigate('/projects')}
-                          className="hover:bg-[#F6F7F9] dark:hover:bg-[#151923] cursor-pointer transition-colors"
-                        >
-                          <td className="py-2.5 px-2 font-medium text-[#111318] dark:text-white truncate max-w-[160px]">
-                            {p.name}
+                        <tr key={p.id} onClick={() => go('/projects')} className="cursor-pointer">
+                          <td className="font-semibold max-w-[200px] truncate">{p.name}</td>
+                          <td className="text-[var(--st-text-secondary)] max-w-[160px] truncate">
+                            {p.clientName || '—'}
                           </td>
-                          <td className="py-2.5 px-2 text-[#626A78] dark:text-[#9AA3B2] truncate max-w-[120px]">
-                            {p.clientName || 'Acme'}
-                          </td>
-                          <td className="py-2.5 px-2">
-                            <div className="flex items-center gap-2">
+                          <td>
+                            <div className="flex items-center gap-2.5">
                               <div className="st-progress-track">
-                                <div
-                                  className="st-progress-fill"
-                                  style={{ width: `${Math.min(100, Math.max(5, progress))}%` }}
-                                />
+                                <div className="st-progress-fill" style={{ width: `${progress}%` }} />
                               </div>
-                              <span className="text-[11px] font-medium text-[#626A78] dark:text-[#9AA3B2] w-8 text-right">
+                              <span className="text-[11.5px] font-semibold text-[var(--st-text-secondary)] w-9 text-right tabular-nums">
                                 {progress}%
                               </span>
                             </div>
                           </td>
-                          <td className="py-2.5 px-2 text-right font-medium text-[#111318] dark:text-white">
-                            {p.targetDelivery || 'Flexible'}
+                          <td className="text-right text-[var(--st-text-secondary)] whitespace-nowrap">
+                            {p.targetDelivery ? formatDate(p.targetDelivery) : '—'}
                           </td>
                         </tr>
                       );
@@ -468,149 +573,146 @@ export default function Dashboard() {
                 </table>
               </div>
             )}
-          </div>
+          </Panel>
         </div>
 
-        {/* Right Column (5 cols): Pipeline Visualization, Needs Attention & Activity Feed */}
-        <div className="lg:col-span-5 space-y-5">
-          {/* Pipeline Stage Distribution */}
-          <div className="st-card p-4 sm:p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E7E9EE] dark:border-[#222733]">
-              <div>
-                <h3 className="text-xs font-semibold text-[#111318] dark:text-white uppercase tracking-wider">
-                  Pipeline Distribution
-                </h3>
-                <p className="text-[11px] text-[#626A78] dark:text-[#9AA3B2]">
-                  {deals.length} active opportunities ({formatINR(pipelineValue)})
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/sales/pipeline')}
-                className="text-xs text-[#315CFF] hover:underline inline-flex items-center gap-1 font-medium"
-              >
-                Kanban <ArrowRight className="w-3 h-3" />
+        <div className="xl:col-span-4 space-y-5 min-w-0">
+          <Panel
+            title="Pipeline by stage"
+            subtitle={
+              metrics.winRate !== null
+                ? `${stagedCount} deals · ${metrics.winRate}% win rate`
+                : `${stagedCount} deals across stages`
+            }
+            action={
+              <button onClick={() => go('/sales/pipeline')} className="st-link">
+                Board <ArrowRight className="w-3.5 h-3.5" />
               </button>
-            </div>
-
-            {deals.length === 0 ? (
-              <div className="py-8 px-4 text-center flex flex-col items-center justify-center">
-                <Layers className="w-7 h-7 text-[#9299A6] mb-2" />
-                <h4 className="text-xs font-semibold text-[#111318] dark:text-white">
-                  No active deals
-                </h4>
-                <p className="text-[11px] text-[#626A78] dark:text-[#9AA3B2] mt-0.5 max-w-xs">
-                  Create your first opportunity to start tracking sales stages and pipeline velocity.
-                </p>
-                <button
-                  onClick={() => navigate('/sales/pipeline')}
-                  className="st-btn-primary st-btn-sm mt-3"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Create Deal</span>
-                </button>
-              </div>
+            }
+          >
+            {stagedCount === 0 ? (
+              <InlineEmpty
+                icon={Layers}
+                title="No deals yet"
+                description="Create an opportunity to start tracking stages and pipeline velocity."
+                actionLabel="Create deal"
+                onAction={() => go('/sales/pipeline')}
+              />
             ) : (
-              <div className="space-y-3 mt-3">
-                {stageBreakdown.map((stg) => (
-                  <div key={stg.key} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-[#111318] dark:text-white">
-                        {stg.label}
-                      </span>
-                      <div className="flex items-center gap-2 text-[11px]">
-                        <span className="font-semibold text-[#111318] dark:text-white">
-                          {stg.count} deals
-                        </span>
-                        <span className="text-[#9299A6]">({formatINR(stg.value)})</span>
-                      </div>
-                    </div>
-                    <div className="st-progress-track h-2 bg-[#F0F2F5] dark:bg-[#191E2A]">
+              <>
+                {/* Stacked share bar: 2px surface gaps between segments */}
+                <div className="flex h-2.5 mt-3 gap-[2px] rounded-full overflow-hidden" role="img" aria-label="Deal count by stage">
+                  {stageBreakdown
+                    .filter((s) => s.count > 0)
+                    .map((s) => (
                       <div
-                        className="st-progress-fill bg-[#315CFF]"
-                        style={{ width: `${Math.max(4, stg.percentage)}%` }}
+                        key={s.key}
+                        title={`${s.label}: ${s.count}`}
+                        style={{ flexGrow: s.count, backgroundColor: s.color }}
+                        className="first:rounded-l-full last:rounded-r-full transition-[flex-grow] duration-500"
                       />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    ))}
+                </div>
+                <ul className="mt-4 space-y-0.5 list-none p-0 m-0">
+                  {stageBreakdown.map((s) => (
+                    <li
+                      key={s.key}
+                      className="flex items-center gap-3 px-2 -mx-2 py-2 rounded-lg hover:bg-[var(--st-surface-hover)] transition-colors"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ backgroundColor: s.color }} />
+                      <span className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--st-text-primary)] flex-1 min-w-0">
+                        {s.key === 'Won' && <Trophy className="w-3.5 h-3.5 text-[var(--st-success-text)]" />}
+                        {s.label}
+                      </span>
+                      <span className="text-[12px] text-[var(--st-text-muted)] tabular-nums">{formatINR(s.value)}</span>
+                      <span className="text-[13px] font-semibold text-[var(--st-text-primary)] tabular-nums w-6 text-right">
+                        {s.count}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
-          </div>
+          </Panel>
 
-          {/* Needs Attention Panel */}
-          <div className="st-card p-4 sm:p-5 border-amber-200/80 dark:border-amber-900/40 bg-amber-50/[0.15] dark:bg-amber-950/[0.08]">
-            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider pb-2 border-b border-amber-200/50 dark:border-amber-900/30">
-              <AlertCircle className="w-3.5 h-3.5" />
-              <span>Needs Attention</span>
-            </div>
-
+          <Panel
+            title="Needs attention"
+            subtitle={attentionCount > 0 ? `${attentionCount} open items` : 'All clear'}
+            action={
+              attentionCount > 0 ? (
+                <span className="st-icon-chip w-7 h-7 rounded-lg st-tone-amber">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                </span>
+              ) : null
+            }
+          >
             <div className="mt-3 space-y-2">
-              {overdueInvoices.length > 0 ? (
-                overdueInvoices.slice(0, 2).map((inv) => (
-                  <div
-                    key={inv.id}
-                    onClick={() => navigate('/finance/invoices')}
-                    className="flex items-center justify-between p-2.5 rounded-md bg-white dark:bg-[#10131A] border border-amber-200/70 dark:border-amber-900/40 cursor-pointer hover:border-[#315CFF] transition-colors"
-                  >
-                    <div>
-                      <div className="text-xs font-semibold text-[#111318] dark:text-white">
-                        {inv.invoiceNumber} • {inv.clientName}
-                      </div>
-                      <div className="text-[11px] text-rose-600 dark:text-rose-400">
-                        Overdue invoice • Due {inv.dueDate}
-                      </div>
-                    </div>
-                    <span className="text-xs font-mono font-bold text-[#111318] dark:text-white">
-                      {formatINR(inv.total || 0)}
+              {metrics.overdueInvoices.slice(0, 3).map((inv) => (
+                <button
+                  key={inv.id}
+                  onClick={() => go('/finance/invoices')}
+                  className="w-full text-left flex items-center gap-3 p-3 rounded-[11px] bg-[var(--st-surface-subtle)] border border-[var(--st-border)] hover:border-[var(--st-danger-border)] cursor-pointer transition-colors"
+                >
+                  <span className="st-icon-chip w-8 h-8 rounded-lg st-tone-rose">
+                    <Receipt className="w-4 h-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-semibold text-[var(--st-text-primary)] truncate">
+                      {inv.invoiceNumber} · {inv.clientName}
                     </span>
-                  </div>
-                ))
-              ) : null}
+                    <span className="block text-[11.5px] text-[var(--st-danger-text)]">
+                      Overdue since {formatDate(inv.dueDate)}
+                    </span>
+                  </span>
+                  <span className="text-[13px] font-bold tabular-nums text-[var(--st-text-primary)]">
+                    {formatINR(inv.total || 0)}
+                  </span>
+                </button>
+              ))}
 
-              {projectsNeedAttention.length > 0 ? (
-                projectsNeedAttention.slice(0, 2).map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => navigate('/projects')}
-                    className="flex items-center justify-between p-2.5 rounded-md bg-white dark:bg-[#10131A] border border-rose-200/70 dark:border-rose-900/40 cursor-pointer hover:border-[#315CFF] transition-colors"
-                  >
-                    <div>
-                      <div className="text-xs font-semibold text-[#111318] dark:text-white">
-                        {p.name}
-                      </div>
-                      <div className="text-[11px] text-rose-600 dark:text-rose-400">
-                        Delivery approaching target: {p.targetDelivery}
-                      </div>
-                    </div>
-                    <StatusBadge status={p.health || 'At Risk'} />
-                  </div>
-                ))
-              ) : null}
+              {metrics.atRiskProjects.slice(0, 3).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => go('/projects')}
+                  className="w-full text-left flex items-center gap-3 p-3 rounded-[11px] bg-[var(--st-surface-subtle)] border border-[var(--st-border)] hover:border-[var(--st-warning-border)] cursor-pointer transition-colors"
+                >
+                  <span className="st-icon-chip w-8 h-8 rounded-lg st-tone-amber">
+                    <FolderGit2 className="w-4 h-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-semibold text-[var(--st-text-primary)] truncate">{p.name}</span>
+                    <span className="block text-[11.5px] text-[var(--st-text-muted)]">
+                      Target {p.targetDelivery ? formatDate(p.targetDelivery) : 'not set'}
+                    </span>
+                  </span>
+                  <StatusBadge status={p.health === 'At Risk' ? 'At Risk' : p.status || 'At Risk'} />
+                </button>
+              ))}
 
-              {overdueInvoices.length === 0 && projectsNeedAttention.length === 0 && (
-                <div className="p-3 text-center rounded-md bg-white dark:bg-[#10131A] border border-[#E7E9EE] dark:border-[#222733] text-xs text-[#626A78] dark:text-[#9AA3B2] flex items-center justify-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>All invoices, projects, and deliveries are currently healthy.</span>
+              {attentionCount === 0 && (
+                <div className="flex items-center gap-3 p-3 rounded-[11px] bg-[var(--st-success-subtle)] border border-[var(--st-success-border)]">
+                  <CheckCircle2 className="w-5 h-5 text-[var(--st-success-text)] shrink-0" />
+                  <span className="text-[12.5px] font-medium text-[var(--st-success-text)]">
+                    Invoices and deliveries are all healthy.
+                  </span>
                 </div>
               )}
             </div>
-          </div>
+          </Panel>
 
-          {/* Recent Business Activity Stream */}
-          <div className="st-card p-4 sm:p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E7E9EE] dark:border-[#222733]">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#9299A6]" />
-                <h3 className="text-xs font-semibold text-[#111318] dark:text-white uppercase tracking-wider">
-                  Live Activity Timeline
-                </h3>
-              </div>
-              <span className="text-[10px] text-[#9299A6] font-medium">Real-time</span>
-            </div>
-
+          <Panel
+            title="Recent activity"
+            subtitle="Latest actions across the workspace"
+            action={
+              <button onClick={() => go('/crm/activities')} className="st-link">
+                <Activity className="w-3.5 h-3.5" /> All
+              </button>
+            }
+          >
             <div className="mt-3">
               <ActivityTimeline activities={activities} limit={5} />
             </div>
-          </div>
+          </Panel>
         </div>
       </div>
     </div>

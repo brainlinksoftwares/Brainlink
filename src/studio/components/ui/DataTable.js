@@ -102,7 +102,7 @@ export default function DataTable({
   return (
     <div className="st-card overflow-hidden flex flex-col">
       {/* Compact Controls Toolbar */}
-      <div className="px-4 py-2.5 border-b border-[#E7E9EE] dark:border-[#222733] bg-white dark:bg-[#10131A] flex flex-col sm:flex-row items-center justify-between gap-2.5">
+      <div className="px-4 py-3 border-b border-[#E7E9EE] dark:border-[#222733] bg-[var(--st-surface)] flex flex-col sm:flex-row items-center justify-between gap-2.5">
         <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
           <div className="relative w-full">
             <Search className="w-3.5 h-3.5 text-[#9299A6] absolute left-3 top-1/2 -translate-y-1/2" />
@@ -167,17 +167,19 @@ export default function DataTable({
         {loading ? (
           <div className="p-5 space-y-2.5">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="h-10 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse"
-              />
+              <div key={i} className="st-skeleton h-10" style={{ opacity: 1 - i * 0.14 }} />
             ))}
           </div>
         ) : paginatedData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-14 text-center px-4">
-            <p className="text-sm font-medium text-[#111318] dark:text-white">{emptyMessage}</p>
-            <p className="text-xs text-[#9299A6] mt-0.5">
-              Try adjusting your search query or filter settings.
+          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+            <span className="st-icon-chip st-tone-slate w-11 h-11 rounded-xl mb-3">
+              <Search className="w-5 h-5" />
+            </span>
+            <p className="text-[14px] font-semibold text-[var(--st-text-primary)]">{emptyMessage}</p>
+            <p className="text-[12.5px] text-[var(--st-text-muted)] mt-1">
+              {searchTerm || filterValue !== 'ALL'
+                ? 'Try adjusting your search query or filter settings.'
+                : 'Records will appear here as soon as they are created.'}
             </p>
           </div>
         ) : (
@@ -261,7 +263,7 @@ export default function DataTable({
 
       {/* Pagination Footer */}
       {totalPages > 1 && (
-        <div className="px-4 py-2.5 border-t border-[#E7E9EE] dark:border-[#222733] bg-[#F6F7F9] dark:bg-[#10131A] flex items-center justify-between text-xs text-[#626A78] dark:text-[#9AA3B2]">
+        <div className="px-4 py-2.5 border-t border-[#E7E9EE] dark:border-[#222733] bg-[var(--st-surface-subtle)] flex items-center justify-between text-xs text-[#626A78] dark:text-[#9AA3B2]">
           <div>
             Showing {(currentPage - 1) * pageSize + 1} to{' '}
             {Math.min(currentPage * pageSize, filteredData.length)} of {filteredData.length} records

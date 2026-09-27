@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useCallback } from 'react';
 
 const StudioBaseContext = createContext({ basePath: '' });
 
@@ -13,4 +13,13 @@ export function StudioBaseProvider({ basePath = '', children }) {
 
 export function useStudioBase() {
   return useContext(StudioBaseContext);
+}
+
+// Resolves an in-app path ("/crm/leads") against the mount point ("/studio" or "").
+export function useStudioPath() {
+  const { basePath } = useStudioBase();
+  return useCallback(
+    (to) => `${basePath}${to.startsWith('/') ? to : `/${to}`}`,
+    [basePath]
+  );
 }

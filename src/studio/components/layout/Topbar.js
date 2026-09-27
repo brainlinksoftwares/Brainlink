@@ -1,25 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import {
   Menu,
   Search,
   Plus,
   Bell,
+  BellOff,
   LogOut,
   Shield,
   ExternalLink,
   ChevronRight,
+  Sun,
+  Moon,
+  Monitor,
+  Check,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { ROLES } from '../../context/rbac';
+import { useStudioBase, useStudioPath } from '../../context/StudioBaseContext';
 import { getNotifications, markNotificationAsRead } from '../../services/notificationService';
+import { formatDateTime } from '../../utils/formatters';
+
+const THEME_OPTIONS = [
+  { id: 'light', label: 'Light', icon: Sun },
+  { id: 'dark', label: 'Dark', icon: Moon },
+  { id: 'system', label: 'System', icon: Monitor },
+];
+
+const SEGMENT_LABELS = {
+  crm: 'CRM',
+  'time-tracking': 'Time Tracking',
+  'audit-logs': 'Audit Logs',
+  transactions: 'Ledger',
+};
+
+function useDismiss(ref, open, onDismiss) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointer = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onDismiss();
+    };
+    const onKey = (e) => e.key === 'Escape' && onDismiss();
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [ref, open, onDismiss]);
+}
 
 export default function Topbar({ onMenuClick, onOpenCommandPalette, onOpenQuickAction }) {
   const { userProfile, role, isSuperAdmin, simulatedRole, setSimulatedRole, logout } = useAuth();
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifMenu, setShowNotifMenu] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { basePath } = useStudioBase();
+  const toPath = useStudioPath();
   const location = useLocation();
+
+  const [notifications, setNotifications] = useState([]);
+  const [openMenu, setOpenMenu] = useState(null); // 'notif' | 'user' | 'theme' | null
+
+  const notifRef = useRef(null);
+  const userRef = useRef(null);
+  const themeRef = useRef(null);
+  const closeMenu = () => setOpenMenu(null);
+  useDismiss(notifRef, openMenu === 'notif', closeMenu);
+  useDismiss(userRef, openMenu === 'user', closeMenu);
+  useDismiss(themeRef, openMenu === 'theme', closeMenu);
+
+  const toggle = (name) => setOpenMenu((cur) => (cur === name ? null : name));
 
   useEffect(() => {
     async function loadNotifs() {
@@ -40,8 +91,20 @@ export default function Topbar({ onMenuClick, onOpenCommandPalette, onOpenQuickA
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   };
 
-  // Generate breadcrumbs from route path
-  const pathSegments = location.pathname.split('/').filter(Boolean).filter((s) => s !== 'studio');
+  const handleMarkAllRead = async () => {
+    const unread = notifications.filter((n) => !n.read);
+    await Promise.all(unread.map((n) => markNotificationAsRead(n.id)));
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  // Breadcrumbs relative to the studio mount point
+  const relativePath =
+    basePath && location.pathname.startsWith(basePath)
+      ? location.pathname.slice(basePath.length)
+      : location.pathname;
+  const pathSegments = relativePath.split('/').filter(Boolean);
+  const formatSegment = (seg) =>
+    SEGMENT_LABELS[seg] || seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' ');
 
   const initials = userProfile?.displayName
     ? userProfile.displayName
@@ -52,79 +115,68 @@ export default function Topbar({ onMenuClick, onOpenCommandPalette, onOpenQuickA
         .toUpperCase()
     : 'AV';
 
+  const ThemeIcon = resolvedTheme === 'dark' ? Moon : Sun;
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+
   return (
-    <header className="h-14 bg-white dark:bg-[#10131A] border-b border-[#E7E9EE] dark:border-[#222733] sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6">
-      {/* Left: Mobile Toggle & Breadcrumb */}
-      <div className="flex items-center gap-3 min-w-0">
-        <button
-          onClick={onMenuClick}
-          className="lg:hidden text-slate-500 hover:text-slate-800 dark:hover:text-white p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
-          aria-label="Toggle navigation menu"
-        >
-          <Menu className="w-4 h-4" />
+    <header className="st-topbar h-16 sticky top-0 z-30 flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+      {/* Left: mobile toggle + breadcrumbs */}
+      <div className="flex items-center gap-2 min-w-0">
+        <button onClick={onMenuClick} className="st-icon-btn lg:hidden" aria-label="Open navigation menu">
+          <Menu className="w-[18px] h-[18px]" />
         </button>
 
-        {/* Clean Breadcrumb */}
-        <nav className="flex items-center space-x-1.5 text-xs text-[#626A78] dark:text-[#9AA3B2] truncate">
+        <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-[13px] min-w-0">
           <Link
-            to="/dashboard"
-            className="hover:text-[#111318] dark:hover:text-white transition-colors font-medium"
+            to={toPath('/dashboard')}
+            className="text-[var(--st-text-muted)] hover:text-[var(--st-text-primary)] transition-colors font-medium no-underline"
           >
             Studio
           </Link>
-          {pathSegments.length === 0 ? (
-            <>
-              <ChevronRight className="w-3 h-3 text-[#9299A6] shrink-0" />
-              <span className="font-semibold text-[#111318] dark:text-white">Dashboard</span>
-            </>
-          ) : (
-            pathSegments.map((seg, idx) => {
-              const url = '/' + pathSegments.slice(0, idx + 1).join('/');
-              const isLast = idx === pathSegments.length - 1;
-              const formattedName = seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' ');
-
-              return (
-                <React.Fragment key={url}>
-                  <ChevronRight className="w-3 h-3 text-[#9299A6] shrink-0" />
-                  {isLast ? (
-                    <span className="font-semibold text-[#111318] dark:text-white truncate">
-                      {formattedName}
-                    </span>
-                  ) : (
-                    <Link
-                      to={url}
-                      className="hover:text-[#111318] dark:hover:text-white transition-colors truncate"
-                    >
-                      {formattedName}
-                    </Link>
-                  )}
-                </React.Fragment>
-              );
-            })
-          )}
+          {(pathSegments.length === 0 ? ['dashboard'] : pathSegments).map((seg, idx, all) => {
+            const url = '/' + all.slice(0, idx + 1).join('/');
+            const isLast = idx === all.length - 1;
+            return (
+              <React.Fragment key={url}>
+                <ChevronRight className="w-3.5 h-3.5 text-[var(--st-text-disabled)] shrink-0" />
+                {isLast ? (
+                  <span className="font-semibold text-[var(--st-text-primary)] truncate">
+                    {formatSegment(seg)}
+                  </span>
+                ) : (
+                  <Link
+                    to={toPath(url)}
+                    className="text-[var(--st-text-muted)] hover:text-[var(--st-text-primary)] transition-colors truncate no-underline"
+                  >
+                    {formatSegment(seg)}
+                  </Link>
+                )}
+              </React.Fragment>
+            );
+          })}
         </nav>
       </div>
 
-      {/* Center-Right: Search Command Bar & Actions */}
-      <div className="flex items-center gap-2.5">
-        {/* Command Search Bar Trigger (Width 280-340px) */}
+      {/* Right: search + actions */}
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <button
           onClick={onOpenCommandPalette}
-          className="flex items-center gap-2.5 px-3 py-1.5 text-xs text-[#626A78] dark:text-[#9AA3B2] bg-[#F6F7F9] dark:bg-[#151923] hover:bg-[#EEF0F4] dark:hover:bg-[#1A202C] border border-[#E7E9EE] dark:border-[#222733] rounded-md transition-colors w-40 sm:w-72"
+          className="group flex items-center gap-2.5 h-9 pl-3 pr-1.5 text-[13px] text-[var(--st-text-muted)] bg-[var(--st-surface)] hover:border-[var(--st-border-strong)] border border-[var(--st-border)] rounded-[10px] transition-colors w-9 sm:w-64 lg:w-80 shadow-[var(--st-shadow-xs)]"
+          aria-label="Search"
         >
-          <Search className="w-3.5 h-3.5 text-[#9299A6] shrink-0" />
-          <span className="truncate text-left font-normal">Search anything...</span>
-          <kbd className="hidden sm:inline-flex ml-auto items-center text-[10px] font-sans font-medium text-[#9299A6] dark:text-slate-400 bg-white dark:bg-[#10131A] border border-[#E7E9EE] dark:border-[#222733] rounded px-1.5 py-0.5 shadow-xs">
-            ⌘ K
-          </kbd>
+          <Search className="w-4 h-4 shrink-0 group-hover:text-[var(--st-text-secondary)]" />
+          <span className="hidden sm:inline truncate text-left">Search or jump to…</span>
+          <span className="hidden sm:inline-flex ml-auto gap-1">
+            <kbd className="st-kbd">{isMac ? '⌘' : 'Ctrl'}</kbd>
+            <kbd className="st-kbd">K</kbd>
+          </span>
         </button>
 
-        {/* Super Admin Role Switcher */}
         {isSuperAdmin && (
-          <div className="hidden xl:flex items-center gap-1.5 bg-[#F6F7F9] dark:bg-[#151923] border border-[#E7E9EE] dark:border-[#222733] rounded-md px-2 py-1 text-xs">
-            <Shield className="w-3 h-3 text-[#315CFF]" />
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-[#9299A6]">
-              View:
+          <label className="hidden xl:flex items-center gap-2 h-9 pl-2.5 pr-1 bg-[var(--st-surface)] border border-[var(--st-border)] rounded-[10px] text-xs shadow-[var(--st-shadow-xs)]">
+            <Shield className="w-3.5 h-3.5 text-[var(--st-accent-text)]" />
+            <span className="text-[10.5px] uppercase tracking-wider font-semibold text-[var(--st-text-muted)]">
+              View as
             </span>
             <select
               value={simulatedRole || ROLES.SUPER_ADMIN}
@@ -132,7 +184,7 @@ export default function Topbar({ onMenuClick, onOpenCommandPalette, onOpenQuickA
                 const val = e.target.value;
                 setSimulatedRole(val === ROLES.SUPER_ADMIN ? null : val);
               }}
-              className="bg-transparent text-xs font-medium text-[#111318] dark:text-white focus:outline-none cursor-pointer border-none"
+              className="bg-transparent text-[12.5px] font-semibold text-[var(--st-text-primary)] focus:outline-none cursor-pointer border-none pr-1"
             >
               <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
               <option value={ROLES.SALES_MANAGER}>Sales Manager</option>
@@ -141,74 +193,110 @@ export default function Topbar({ onMenuClick, onOpenCommandPalette, onOpenQuickA
               <option value={ROLES.DEVELOPER}>Developer</option>
               <option value={ROLES.CLIENT}>Client Portal</option>
             </select>
-          </div>
+          </label>
         )}
 
-        {/* Quick Add Button */}
-        {role !== ROLES.CLIENT && (
+        {/* Theme */}
+        <div className="relative" ref={themeRef}>
           <button
-            onClick={onOpenQuickAction}
-            className="st-btn-primary st-btn-sm"
-            title="Quick Action (+ New)"
+            onClick={() => toggle('theme')}
+            className="st-icon-btn"
+            aria-label="Change theme"
+            aria-expanded={openMenu === 'theme'}
+            title="Theme"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">New</span>
+            <ThemeIcon className="w-[18px] h-[18px]" />
           </button>
-        )}
+          {openMenu === 'theme' && (
+            <div className="st-menu w-40 p-1.5" role="menu">
+              {THEME_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.id}
+                    role="menuitemradio"
+                    aria-checked={theme === opt.id}
+                    onClick={() => {
+                      setTheme(opt.id);
+                      closeMenu();
+                    }}
+                    className="st-menu-item"
+                  >
+                    <Icon />
+                    <span className="flex-1">{opt.label}</span>
+                    {theme === opt.id && <Check className="text-[var(--st-accent-text)]" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-        {/* Notifications Dropdown */}
-        <div className="relative">
+        {/* Notifications */}
+        <div className="relative" ref={notifRef}>
           <button
-            onClick={() => {
-              setShowNotifMenu(!showNotifMenu);
-              setShowUserMenu(false);
-            }}
-            className="relative p-1.5 rounded-md text-[#626A78] hover:text-[#111318] dark:text-[#9AA3B2] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#151923] transition-colors"
-            title="Notifications"
+            onClick={() => toggle('notif')}
+            className="st-icon-btn"
+            aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ''}`}
+            aria-expanded={openMenu === 'notif'}
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-[18px] h-[18px]" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#315CFF] ring-2 ring-white dark:ring-[#10131A]" />
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-br from-[#3B5BFF] to-[#9A5CFF] text-white text-[9.5px] font-bold flex items-center justify-center ring-2 ring-[var(--st-bg)]">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
             )}
           </button>
 
-          {showNotifMenu && (
-            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-[#10131A] border border-[#E7E9EE] dark:border-[#222733] rounded-lg shadow-lg py-2 z-50 animate-fadeIn">
-              <div className="px-4 py-2 border-b border-[#E7E9EE] dark:border-[#222733] flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#111318] dark:text-white">
-                  Notifications
-                </span>
+          {openMenu === 'notif' && (
+            <div className="st-menu w-[340px] max-w-[calc(100vw-2rem)]">
+              <div className="px-4 py-3 border-b border-[var(--st-border)] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[var(--st-text-primary)]">Notifications</span>
+                  {unreadCount > 0 && <span className="st-pill-accent">{unreadCount} new</span>}
+                </div>
                 {unreadCount > 0 && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-[#315CFF] font-semibold border border-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900">
-                    {unreadCount} new
-                  </span>
+                  <button onClick={handleMarkAllRead} className="st-link text-[11.5px]">
+                    Mark all read
+                  </button>
                 )}
               </div>
 
-              <div className="max-h-72 overflow-y-auto studio-scrollbar divide-y divide-[#F0F2F5] dark:divide-[#191E2A]">
+              <div className="max-h-[360px] overflow-y-auto studio-scrollbar p-1.5">
                 {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-[#9299A6]">
-                    No recent notifications
+                  <div className="py-10 px-6 text-center">
+                    <div className="st-icon-chip st-tone-slate mx-auto mb-3">
+                      <BellOff className="w-4 h-4" />
+                    </div>
+                    <div className="text-[13px] font-semibold text-[var(--st-text-primary)]">You're all caught up</div>
+                    <div className="text-xs text-[var(--st-text-muted)] mt-0.5">New alerts will show up here.</div>
                   </div>
                 ) : (
                   notifications.map((n) => (
-                    <div
+                    <button
                       key={n.id}
                       onClick={() => handleMarkRead(n.id)}
-                      className={`p-3 text-xs hover:bg-slate-50 dark:hover:bg-[#151923] cursor-pointer transition-colors ${
-                        !n.read ? 'bg-blue-50/30 dark:bg-blue-950/20' : ''
+                      className={`w-full text-left flex gap-3 p-2.5 rounded-lg border-0 cursor-pointer transition-colors hover:bg-[var(--st-surface-hover)] ${
+                        !n.read ? 'bg-[var(--st-accent-subtle)]' : 'bg-transparent'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="font-medium text-[#111318] dark:text-white">{n.title}</div>
-                        {!n.read && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#315CFF] shrink-0 mt-1" />
+                      <span
+                        className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
+                          !n.read ? 'bg-[var(--st-accent)]' : 'bg-[var(--st-border-strong)]'
+                        }`}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-semibold text-[var(--st-text-primary)]">{n.title}</span>
+                        <span className="block text-xs text-[var(--st-text-secondary)] mt-0.5 line-clamp-2">
+                          {n.message}
+                        </span>
+                        {n.createdAt && (
+                          <span className="block text-[11px] text-[var(--st-text-muted)] mt-1">
+                            {formatDateTime(n.createdAt)}
+                          </span>
                         )}
-                      </div>
-                      <p className="text-[#626A78] dark:text-[#9AA3B2] text-[11px] mt-0.5 line-clamp-2">
-                        {n.message}
-                      </p>
-                    </div>
+                      </span>
+                    </button>
                   ))
                 )}
               </div>
@@ -216,52 +304,62 @@ export default function Topbar({ onMenuClick, onOpenCommandPalette, onOpenQuickA
           )}
         </div>
 
-        {/* User Profile Avatar */}
-        <div className="relative">
+        {role !== ROLES.CLIENT && (
+          <button onClick={onOpenQuickAction} className="st-btn-primary h-9 px-3 sm:px-3.5" title="Quick create (N)">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New</span>
+          </button>
+        )}
+
+        {/* User */}
+        <div className="relative ml-0.5" ref={userRef}>
           <button
-            onClick={() => {
-              setShowUserMenu(!showUserMenu);
-              setShowNotifMenu(false);
-            }}
-            className="flex items-center gap-2 p-0.5 rounded-md hover:ring-2 hover:ring-[#315CFF]/20 transition-all"
+            onClick={() => toggle('user')}
+            className="flex items-center rounded-full p-0.5 border-0 bg-transparent cursor-pointer ring-offset-2 ring-offset-[var(--st-bg)] hover:ring-2 hover:ring-[var(--st-accent-border)] transition-shadow"
+            aria-label="Account menu"
+            aria-expanded={openMenu === 'user'}
           >
-            <div className="w-7 h-7 rounded-full bg-[#315CFF]/15 border border-[#315CFF]/25 text-[#315CFF] dark:text-[#5D80FF] font-semibold text-xs flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#3B5BFF] to-[#9A5CFF] text-white font-semibold text-[11px] flex items-center justify-center">
               {initials}
             </div>
           </button>
 
-          {showUserMenu && (
-            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#10131A] border border-[#E7E9EE] dark:border-[#222733] rounded-lg shadow-lg py-1.5 z-50">
-              <div className="px-3.5 py-2 border-b border-[#E7E9EE] dark:border-[#222733]">
-                <div className="text-xs font-semibold text-[#111318] dark:text-white truncate">
-                  {userProfile?.displayName || 'Aaditya Vishnoi'}
+          {openMenu === 'user' && (
+            <div className="st-menu w-64">
+              <div className="p-4 flex items-center gap-3 border-b border-[var(--st-border)] bg-[var(--st-gradient-soft)]">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#3B5BFF] to-[#9A5CFF] text-white font-semibold text-sm flex items-center justify-center shrink-0">
+                  {initials}
                 </div>
-                <div className="text-[11px] text-[#626A78] dark:text-[#9AA3B2] truncate">
-                  {userProfile?.email || 'vishnoiaaditya29@gmail.com'}
-                </div>
-                <div className="mt-1 text-[10px] font-medium text-[#315CFF] uppercase tracking-wider">
-                  {role || 'Super Admin'}
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-[var(--st-text-primary)] truncate">
+                    {userProfile?.displayName || 'Aaditya Vishnoi'}
+                  </div>
+                  <div className="text-xs text-[var(--st-text-secondary)] truncate">{userProfile?.email}</div>
+                  <div className="mt-1 text-[10.5px] font-semibold text-[var(--st-accent-text)] uppercase tracking-wider">
+                    {(role || 'Super Admin').replace(/_/g, ' ')}
+                  </div>
                 </div>
               </div>
 
-              <div className="py-1">
-                <a
-                  href="https://brainlink.in"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between px-3.5 py-1.5 text-xs text-[#626A78] dark:text-[#9AA3B2] hover:bg-slate-50 dark:hover:bg-[#151923]"
-                >
-                  <span>Main Website</span>
-                  <ExternalLink className="w-3 h-3 text-[#9299A6]" />
+              <div className="p-1.5">
+                {role !== ROLES.CLIENT && (
+                  <Link to={toPath('/admin/settings')} onClick={closeMenu} className="st-menu-item">
+                    <Settings />
+                    <span>Settings</span>
+                  </Link>
+                )}
+                <a href="https://brainlink.in" target="_blank" rel="noopener noreferrer" className="st-menu-item">
+                  <ExternalLink />
+                  <span className="flex-1">Main website</span>
                 </a>
               </div>
 
-              <div className="border-t border-[#E7E9EE] dark:border-[#222733] pt-1">
+              <div className="p-1.5 border-t border-[var(--st-border)]">
                 <button
                   onClick={logout}
-                  className="w-full flex items-center gap-2 px-3.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                  className="st-menu-item st-menu-item-danger"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut />
                   <span>Sign out</span>
                 </button>
               </div>

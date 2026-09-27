@@ -2,32 +2,42 @@ import React from 'react';
 
 export default function Tabs({ tabs, activeTab, onChange }) {
   return (
-    <div className="flex items-center gap-1 border-b border-[#E7E9EE] dark:border-[#222733] mb-5 overflow-x-auto studio-scrollbar">
+    <div
+      role="tablist"
+      className="flex items-center gap-1 border-b border-[var(--st-border)] mb-5 overflow-x-auto studio-scrollbar"
+    >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
         return (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={isActive}
             onClick={() => onChange(tab.id)}
-            className={`flex items-center gap-2 px-3 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors -mb-px ${
+            className={`relative flex items-center gap-2 px-3 h-10 text-[13px] whitespace-nowrap bg-transparent border-0 cursor-pointer transition-colors ${
               isActive
-                ? 'border-[#315CFF] text-[#315CFF] dark:text-[#5D80FF]'
-                : 'border-transparent text-[#626A78] hover:text-[#111318] dark:text-[#9AA3B2] dark:hover:text-white'
+                ? 'font-semibold text-[var(--st-text-primary)]'
+                : 'font-medium text-[var(--st-text-muted)] hover:text-[var(--st-text-primary)]'
             }`}
           >
-            {Icon && <Icon className="w-3.5 h-3.5" />}
+            {Icon && (
+              <Icon className={`w-4 h-4 ${isActive ? 'text-[var(--st-accent-text)]' : ''}`} />
+            )}
             <span>{tab.label}</span>
             {tab.count !== undefined && (
               <span
-                className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-sans font-semibold ${
+                className={`px-1.5 min-w-[20px] h-5 inline-flex items-center justify-center rounded-full text-[10.5px] font-semibold ${
                   isActive
-                    ? 'bg-[#315CFF]/15 text-[#315CFF] dark:text-[#5D80FF]'
-                    : 'bg-[#F6F7F9] text-[#626A78] dark:bg-[#151923] dark:text-[#9AA3B2]'
+                    ? 'bg-[var(--st-accent-subtle)] text-[var(--st-accent-text)]'
+                    : 'bg-[var(--st-surface-sunken)] text-[var(--st-text-muted)]'
                 }`}
               >
                 {tab.count}
               </span>
+            )}
+            {isActive && (
+              <span className="absolute left-2 right-2 -bottom-px h-[2px] rounded-full bg-[image:var(--st-gradient)]" />
             )}
           </button>
         );

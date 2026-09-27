@@ -31,42 +31,29 @@ export default function Drawer({
   if (!isOpen) return null;
 
   return (
-    <div className="st-drawer-overlay" onClick={onClose}>
+    <div className="st-drawer-overlay st-themed" onClick={onClose}>
       <div
         className={`st-drawer-panel ${width}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        aria-label={typeof title === 'string' ? title : undefined}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <div>
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-              {title}
-            </h3>
-            {subtitle && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {subtitle}
-              </p>
-            )}
+        <div className="relative flex items-start justify-between gap-4 px-6 py-5 border-b border-[var(--st-border)] bg-[var(--st-surface)]">
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-[image:var(--st-gradient)]" />
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold tracking-tight text-[var(--st-text-primary)]">{title}</h3>
+            {subtitle && <p className="text-[12.5px] text-[var(--st-text-muted)] mt-0.5">{subtitle}</p>}
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            title="Close (Esc)"
-          >
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="st-icon-btn -mr-2 w-8 h-8" title="Close (Esc)" aria-label="Close">
+            <X className="w-[18px] h-[18px]" />
           </button>
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 studio-scrollbar bg-slate-50/40 dark:bg-slate-950/40">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5 studio-scrollbar bg-[var(--st-surface-subtle)]">{children}</div>
 
-        {/* Footer */}
         {footer && (
-          <div className="px-6 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end gap-2.5">
+          <div className="px-6 py-3.5 border-t border-[var(--st-border)] bg-[var(--st-surface)] flex items-center justify-end gap-2.5">
             {footer}
           </div>
         )}

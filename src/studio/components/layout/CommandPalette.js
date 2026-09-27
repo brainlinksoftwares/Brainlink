@@ -196,24 +196,26 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#090B10]/60 backdrop-blur-xs flex items-start justify-center pt-16 sm:pt-24 px-4"
+      className="st-themed fixed inset-0 z-50 bg-[#07090E]/55 backdrop-blur-md flex items-start justify-center pt-16 sm:pt-24 px-4"
+      style={{ animation: 'stFadeIn 160ms ease-out' }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-white dark:bg-[#10131A] rounded-xl border border-[#E7E9EE] dark:border-[#222733] shadow-modal overflow-hidden flex flex-col animate-fadeIn"
+        className="w-full max-w-2xl bg-[var(--st-surface-elevated)] rounded-2xl border border-[var(--st-border)] shadow-[var(--st-shadow-modal)] overflow-hidden flex flex-col"
+        style={{ animation: 'stScaleUp 220ms var(--st-ease)' }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDownList}
       >
         {/* Search Input Box */}
-        <div className="relative flex items-center px-4 py-3.5 border-b border-[#E7E9EE] dark:border-[#222733]">
-          <Search className="w-4 h-4 text-[#9299A6] absolute left-4" />
+        <div className="relative flex items-center px-5 py-4 border-b border-[#E7E9EE] dark:border-[#222733]">
+          <Search className="w-[18px] h-[18px] text-[#9299A6] absolute left-5" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search leads, clients, projects, invoices..."
             autoFocus
-            className="w-full pl-8 pr-8 text-sm font-normal bg-transparent text-[#111318] dark:text-white placeholder-[#9299A6] outline-none"
+            className="w-full pl-8 pr-8 text-[15px] font-normal bg-transparent border-0 text-[#111318] dark:text-white placeholder-[#9299A6] outline-none"
           />
           {query ? (
             <button
@@ -230,7 +232,7 @@ export default function CommandPalette({ isOpen, onClose }) {
         </div>
 
         {/* Results / Quick Actions Container */}
-        <div className="max-h-80 overflow-y-auto studio-scrollbar p-2">
+        <div className="max-h-[420px] overflow-y-auto studio-scrollbar p-2">
           {loading ? (
             <div className="py-8 text-center text-xs text-[#9299A6] flex items-center justify-center gap-2">
               <div className="w-3.5 h-3.5 border-2 border-[#315CFF] border-t-transparent rounded-full animate-spin" />
@@ -263,7 +265,7 @@ export default function CommandPalette({ isOpen, onClose }) {
                     <div
                       onClick={() => handleSelect(item.url)}
                       onMouseEnter={() => setSelectedIndex(index)}
-                      className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors ${
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
                         isSelected
                           ? 'bg-[#315CFF]/10 text-[#315CFF] dark:text-[#5D80FF]'
                           : 'hover:bg-[#F6F7F9] dark:hover:bg-[#151923] text-[#111318] dark:text-[#F5F7FA]'
@@ -271,7 +273,7 @@ export default function CommandPalette({ isOpen, onClose }) {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                             isSelected
                               ? 'bg-[#315CFF] text-white'
                               : 'bg-[#F6F7F9] dark:bg-[#151923] text-[#626A78] dark:text-[#9AA3B2]'
@@ -280,7 +282,7 @@ export default function CommandPalette({ isOpen, onClose }) {
                           <Icon className="w-3.5 h-3.5" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs font-semibold truncate">{item.title}</div>
+                          <div className="text-[13px] font-semibold truncate">{item.title}</div>
                           {item.subtitle && (
                             <div className="text-[11px] text-[#9299A6] truncate">
                               {item.subtitle}
@@ -304,7 +306,7 @@ export default function CommandPalette({ isOpen, onClose }) {
         </div>
 
         {/* Keyboard Helper Footer */}
-        <div className="px-4 py-2 bg-[#F6F7F9] dark:bg-[#0C0E14] border-t border-[#E7E9EE] dark:border-[#222733] flex items-center justify-between text-[11px] text-[#9299A6]">
+        <div className="px-4 py-2 bg-[var(--st-surface-subtle)] border-t border-[#E7E9EE] dark:border-[#222733] flex items-center justify-between text-[11px] text-[#9299A6]">
           <div className="flex items-center gap-3">
             <span>
               <kbd className="font-sans font-medium bg-white dark:bg-[#10131A] px-1 py-0.5 rounded border border-[#E7E9EE] dark:border-[#222733] mr-1">

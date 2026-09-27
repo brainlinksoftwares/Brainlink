@@ -1,7 +1,14 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { CheckCircle2, AlertTriangle, AlertCircle, Info, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
+
+const TOAST_STYLES = {
+  success: { Icon: CheckCircle2, tone: { bar: 'bg-emerald-500', chip: 'emerald' } },
+  error: { Icon: AlertCircle, tone: { bar: 'bg-rose-500', chip: 'rose' } },
+  warning: { Icon: AlertTriangle, tone: { bar: 'bg-amber-500', chip: 'amber' } },
+  info: { Icon: Info, tone: { bar: 'bg-[#3B5BFF]', chip: 'blue' } },
+};
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
@@ -21,48 +28,44 @@ export function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const toast = {
-    success: (msg, dur) => addToast(msg, 'success', dur),
-    error: (msg, dur) => addToast(msg, 'error', dur),
-    info: (msg, dur) => addToast(msg, 'info', dur),
-    warning: (msg, dur) => addToast(msg, 'warning', dur),
-  };
+  // Stable identity: pages list `toast` in effect/callback deps.
+  const toast = useMemo(
+    () => ({
+      success: (msg, dur) => addToast(msg, 'success', dur),
+      error: (msg, dur) => addToast(msg, 'error', dur),
+      info: (msg, dur) => addToast(msg, 'info', dur),
+      warning: (msg, dur) => addToast(msg, 'warning', dur),
+    }),
+    [addToast]
+  );
 
   return (
     <ToastContext.Provider value={toast}>
       {children}
-      <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 max-w-md w-full pointer-events-none px-4">
+      <div
+        className="st-themed fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 w-[calc(100vw-2.5rem)] max-w-sm pointer-events-none"
+        aria-live="polite"
+      >
         {toasts.map((t) => {
-          let bg = 'bg-slate-900 text-white border-slate-700';
-          let Icon = Info;
-          let iconColor = 'text-blue-400';
-
-          if (t.type === 'success') {
-            bg = 'bg-emerald-950 text-emerald-100 border-emerald-800';
-            Icon = CheckCircle2;
-            iconColor = 'text-emerald-400';
-          } else if (t.type === 'error') {
-            bg = 'bg-red-950 text-red-100 border-red-800';
-            Icon = AlertCircle;
-            iconColor = 'text-red-400';
-          } else if (t.type === 'warning') {
-            bg = 'bg-amber-950 text-amber-100 border-amber-800';
-            Icon = AlertTriangle;
-            iconColor = 'text-amber-400';
-          }
-
+          const { Icon, tone } = TOAST_STYLES[t.type] || TOAST_STYLES.info;
           return (
             <div
               key={t.id}
-              className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-xl backdrop-blur-md transition-all duration-300 transform translate-y-0 opacity-100 ${bg}`}
-              role="alert"
+              className="pointer-events-auto relative overflow-hidden flex items-start gap-3 py-3 pl-4 pr-3 rounded-xl bg-[var(--st-surface-elevated)] border border-[var(--st-border)] shadow-[var(--st-shadow-lg)]"
+              style={{ animation: 'stToastIn 260ms var(--st-ease)', fontFamily: 'var(--font-sans)' }}
+              role={t.type === 'error' ? 'alert' : 'status'}
             >
-              <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${iconColor}`} />
-              <div className="flex-1 text-sm font-medium leading-snug">{t.message}</div>
+              <span className={`absolute left-0 inset-y-0 w-[3px] ${tone.bar}`} />
+              <span className={`st-icon-chip w-7 h-7 rounded-lg st-tone-${tone.chip}`}>
+                <Icon className="w-4 h-4" />
+              </span>
+              <div className="flex-1 pt-1 text-[13px] font-medium leading-snug text-[var(--st-text-primary)]">
+                {t.message}
+              </div>
               <button
                 onClick={() => removeToast(t.id)}
-                className="shrink-0 text-slate-400 hover:text-white transition-colors"
-                aria-label="Close notification"
+                className="shrink-0 p-1 rounded-md bg-transparent border-0 cursor-pointer text-[var(--st-text-muted)] hover:text-[var(--st-text-primary)] hover:bg-[var(--st-surface-hover)] transition-colors"
+                aria-label="Dismiss notification"
               >
                 <X className="w-4 h-4" />
               </button>
