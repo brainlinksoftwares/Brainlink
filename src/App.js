@@ -26,8 +26,70 @@ const NotFound = lazy(() => import("./common/NotFound"));
 
 const StudioApp = lazy(() => import("./studio/StudioApp"));
 
+// Eagerly initiate StudioApp chunk fetch if already on studio domain or /studio path
+if (typeof window !== 'undefined' && (
+  window.location.hostname === 'studio.brainlink.in' ||
+  window.location.hostname.startsWith('studio.') ||
+  window.location.pathname.startsWith('/studio')
+)) {
+  import("./studio/StudioApp");
+}
+
 function RouteFallback() {
   return <LoadingState label="Loading..." minHeight="60vh" />;
+}
+
+function StudioFallback() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#090B10',
+      color: '#F5F7FA',
+      fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif"
+    }}>
+      <div style={{
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        background: 'linear-gradient(135deg, #315CFF 0%, #1A3BBB 100%)',
+        color: '#FFFFFF',
+        fontWeight: 700,
+        fontSize: 14,
+        letterSpacing: '0.04em',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: '0 8px 24px rgba(49,92,255,0.28)',
+        marginBottom: 16
+      }}>
+        BS
+      </div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        fontSize: 13,
+        fontWeight: 500,
+        color: '#8893A6',
+        letterSpacing: '0.02em'
+      }}>
+        <div style={{
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
+          border: '2px solid #315CFF',
+          borderTopColor: 'transparent',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+        <span>Initializing Brainlink Studio...</span>
+      </div>
+      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 }
 
 function AnimatedRoutes() {
@@ -47,7 +109,7 @@ function AnimatedRoutes() {
     }
 
     return (
-      <Suspense fallback={<RouteFallback />}>
+      <Suspense fallback={<StudioFallback />}>
         <Routes>
           <Route path="/*" element={<StudioApp basePath="" />} />
         </Routes>

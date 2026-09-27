@@ -34,25 +34,36 @@ import { getDeals } from '../../services/salesService';
 import { getProjects } from '../../services/projectService';
 import { getInvoices, getPayments, getExpenses } from '../../services/financeService';
 
+const DASHBOARD_CACHE_KEY = 'brainlink_dashboard_cache_v2';
+
+function getCachedDashboard() {
+  try {
+    const raw = sessionStorage.getItem(DASHBOARD_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
   const toast = useToast();
 
-  const [loading, setLoading] = useState(true);
+  const cached = getCachedDashboard();
+  const [loading, setLoading] = useState(!cached);
   const [period, setPeriod] = useState('month'); // 'today' | 'week' | 'month' | 'quarter'
 
-  // Real Database State
-  const [leads, setLeads] = useState([]);
-  const [deals, setDeals] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [payments, setPayments] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [activities, setActivities] = useState([]);
+  // Hydrate instantly from cache if available (0ms first paint)
+  const [leads, setLeads] = useState(cached?.leads || []);
+  const [deals, setDeals] = useState(cached?.deals || []);
+  const [projects, setProjects] = useState(cached?.projects || []);
+  const [invoices, setInvoices] = useState(cached?.invoices || []);
+  const [payments, setPayments] = useState(cached?.payments || []);
+  const [expenses, setExpenses] = useState(cached?.expenses || []);
+  const [activities, setActivities] = useState(cached?.activities || []);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
     try {
       const [leadsData, dealsData, projectsData, invoicesData, paymentsData, expensesData, activitiesData] =
         await Promise.all([
@@ -72,13 +83,31 @@ export default function Dashboard() {
       setPayments(paymentsData || []);
       setExpenses(expensesData || []);
       setActivities(activitiesData || []);
+
+      // Persist to session storage for instant subsequent visits
+      try {
+        sessionStorage.setItem(
+          DASHBOARD_CACHE_KEY,
+          JSON.stringify({
+            leads: leadsData || [],
+            deals: dealsData || [],
+            projects: projectsData || [],
+            invoices: invoicesData || [],
+            payments: paymentsData || [],
+            expenses: expensesData || [],
+            activities: activitiesData || [],
+          })
+        );
+      } catch (e) {}
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      toast.error('Failed to load dashboard metrics');
+      if (!cached) {
+        toast.error('Failed to load dashboard metrics');
+      }
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, cached]);
 
   useEffect(() => {
     fetchData();

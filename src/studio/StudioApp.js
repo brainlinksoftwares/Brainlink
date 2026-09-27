@@ -6,9 +6,11 @@ import { StudioBaseProvider, useStudioBase } from './context/StudioBaseContext';
 import StudioLayout from './components/layout/StudioLayout';
 import './studio.css';
 
-// Pages
-const Login = lazy(() => import('./pages/auth/Login'));
-const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
+// Critical entry pages bundled directly to eliminate nested lazy chunk waterfall
+import Login from './pages/auth/Login';
+import Dashboard from './pages/dashboard/Dashboard';
+
+// Secondary pages lazily chunked on demand
 const Leads = lazy(() => import('./pages/crm/Leads'));
 const Contacts = lazy(() => import('./pages/crm/Contacts'));
 const Companies = lazy(() => import('./pages/crm/Companies'));
@@ -45,10 +47,10 @@ function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-slate-400 text-xs">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-          <span>Verifying Studio credentials...</span>
+      <div className="min-h-screen bg-[#090B10] flex items-center justify-center text-[#9AA3B2] text-xs font-sans">
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="w-6 h-6 rounded-full border-2 border-[#315CFF] border-t-transparent animate-spin" />
+          <span className="text-[11px] font-medium tracking-wide">Loading Studio...</span>
         </div>
       </div>
     );

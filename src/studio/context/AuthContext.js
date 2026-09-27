@@ -14,33 +14,91 @@ import { ROLES, ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS, isUserSuperAdmin, has
 import { logAudit } from '../services/auditService';
 
 const AuthContext = createContext(null);
+const SESSION_CACHE_KEY = 'brainlink_studio_session_v2';
+
+function getCachedSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveCachedSession(user, profile) {
+  try {
+    if (!user) {
+      localStorage.removeItem(SESSION_CACHE_KEY);
+    } else {
+      localStorage.setItem(
+        SESSION_CACHE_KEY,
+        JSON.stringify({
+          user: {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || profile?.displayName,
+            photoURL: user.photoURL || '',
+          },
+          profile,
+        })
+      );
+    }
+  } catch (e) {
+    // Ignore storage quota errors
+  }
+}
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [simulatedRole, setSimulatedRole] = useState(null); // Allows Super Admin to preview other roles
+  const cached = getCachedSession();
+  const [currentUser, setCurrentUser] = useState(cached?.user || null);
+  const [userProfile, setUserProfile] = useState(cached?.profile || null);
+  // If we already have a cached session, do NOT block first paint!
+  const [loading, setLoading] = useState(!cached?.user);
+  const [simulatedRole, setSimulatedRole] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Safety timeout: If Firebase auth takes > 2.5s on cold starts, unblock UI
+    const timeout = setTimeout(() => {
+      if (isMounted && loading) {
+        setLoading(false);
+      }
+    }, 2500);
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      clearTimeout(timeout);
+      if (!isMounted) return;
+
       if (firebaseUser) {
+        const isSuper = isUserSuperAdmin(firebaseUser.email);
+        const fallbackProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+          photoURL: firebaseUser.photoURL || '',
+          role: isSuper ? ROLES.SUPER_ADMIN : ROLES.SALES_EXECUTIVE,
+          permissions: isSuper ? ALL_PERMISSIONS : DEFAULT_ROLE_PERMISSIONS[ROLES.SALES_EXECUTIVE],
+          status: 'active',
+        };
+
+        // If not already populated, immediately set currentUser so UI renders
+        setCurrentUser(firebaseUser);
+        if (!userProfile) {
+          setUserProfile(fallbackProfile);
+        }
+        setLoading(false);
+
+        // Fetch / sync complete Firestore profile in the background
         try {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDocSnap = await getDoc(userDocRef);
 
           let profileData = null;
-          const isSuper = isUserSuperAdmin(firebaseUser.email);
-
           if (!userDocSnap.exists()) {
-            // Provision user in Firestore
             profileData = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-              photoURL: firebaseUser.photoURL || '',
-              role: isSuper ? ROLES.SUPER_ADMIN : ROLES.SALES_EXECUTIVE,
-              permissions: isSuper ? ALL_PERMISSIONS : DEFAULT_ROLE_PERMISSIONS[ROLES.SALES_EXECUTIVE],
-              status: 'active',
+              ...fallbackProfile,
               createdAt: serverTimestamp(),
               lastLoginAt: serverTimestamp(),
             };
@@ -55,7 +113,6 @@ export function AuthProvider({ children }) {
           } else {
             profileData = userDocSnap.data();
 
-            // If user's email is in Super Admin list, make sure they have SUPER_ADMIN role
             if (isSuper && profileData.role !== ROLES.SUPER_ADMIN) {
               profileData.role = ROLES.SUPER_ADMIN;
               profileData.permissions = ALL_PERMISSIONS;
@@ -65,41 +122,56 @@ export function AuthProvider({ children }) {
                 lastLoginAt: serverTimestamp(),
               });
             } else {
-              await updateDoc(userDocRef, {
+              updateDoc(userDocRef, {
                 lastLoginAt: serverTimestamp(),
               }).catch(() => {});
             }
           }
 
-          setCurrentUser(firebaseUser);
-          setUserProfile(profileData);
+          if (isMounted) {
+            setUserProfile(profileData);
+            saveCachedSession(firebaseUser, profileData);
+          }
         } catch (error) {
-          console.error('Error fetching user profile from Firestore:', error);
-          // Fallback minimal profile if Firestore read is initially restricted
-          const isSuper = isUserSuperAdmin(firebaseUser.email);
-          setCurrentUser(firebaseUser);
-          setUserProfile({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || firebaseUser.email,
-            role: isSuper ? ROLES.SUPER_ADMIN : ROLES.SALES_EXECUTIVE,
-            permissions: isSuper ? ALL_PERMISSIONS : DEFAULT_ROLE_PERMISSIONS[ROLES.SALES_EXECUTIVE],
-            status: 'active',
-          });
+          console.warn('Background profile sync warning:', error);
+          if (isMounted && !userProfile) {
+            setUserProfile(fallbackProfile);
+            saveCachedSession(firebaseUser, fallbackProfile);
+          }
         }
       } else {
-        setCurrentUser(null);
-        setUserProfile(null);
-        setSimulatedRole(null);
+        if (isMounted) {
+          setCurrentUser(null);
+          setUserProfile(null);
+          setSimulatedRole(null);
+          saveCachedSession(null, null);
+          setLoading(false);
+        }
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
   const login = async (email, password) => {
     const cred = await signInWithEmailAndPassword(auth, email, password);
+    const isSuper = isUserSuperAdmin(cred.user.email);
+    const initialProfile = {
+      uid: cred.user.uid,
+      email: cred.user.email,
+      displayName: cred.user.displayName || cred.user.email.split('@')[0],
+      photoURL: cred.user.photoURL || '',
+      role: isSuper ? ROLES.SUPER_ADMIN : ROLES.SALES_EXECUTIVE,
+      permissions: isSuper ? ALL_PERMISSIONS : DEFAULT_ROLE_PERMISSIONS[ROLES.SALES_EXECUTIVE],
+      status: 'active',
+    };
+    setCurrentUser(cred.user);
+    setUserProfile(initialProfile);
+    saveCachedSession(cred.user, initialProfile);
     logAudit({
       user: cred.user.email,
       action: 'User Login',
@@ -112,80 +184,108 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = async () => {
     const cred = await signInWithPopup(auth, googleProvider);
+    const isSuper = isUserSuperAdmin(cred.user.email);
+    const initialProfile = {
+      uid: cred.user.uid,
+      email: cred.user.email,
+      displayName: cred.user.displayName || cred.user.email.split('@')[0],
+      photoURL: cred.user.photoURL || '',
+      role: isSuper ? ROLES.SUPER_ADMIN : ROLES.SALES_EXECUTIVE,
+      permissions: isSuper ? ALL_PERMISSIONS : DEFAULT_ROLE_PERMISSIONS[ROLES.SALES_EXECUTIVE],
+      status: 'active',
+    };
+    setCurrentUser(cred.user);
+    setUserProfile(initialProfile);
+    saveCachedSession(cred.user, initialProfile);
     logAudit({
       user: cred.user.email,
-      action: 'User Login Google',
+      action: 'User Login (Google)',
       entity: 'auth',
       entityId: cred.user.uid,
-      newValue: 'Successful Google Sign-In',
+      newValue: 'Successful Google SSO',
     });
     return cred.user;
   };
 
-  const register = async (email, password, displayName, role = ROLES.SALES_EXECUTIVE) => {
+  const signup = async (email, password, displayName, role = ROLES.SALES_EXECUTIVE) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     if (displayName) {
       await updateProfile(cred.user, { displayName });
     }
     const isSuper = isUserSuperAdmin(email);
-    const assignedRole = isSuper ? ROLES.SUPER_ADMIN : role;
-    const permissions = assignedRole === ROLES.SUPER_ADMIN ? ALL_PERMISSIONS : (DEFAULT_ROLE_PERMISSIONS[assignedRole] || []);
+    const userRole = isSuper ? ROLES.SUPER_ADMIN : role;
+    const permissions = isSuper ? ALL_PERMISSIONS : (DEFAULT_ROLE_PERMISSIONS[userRole] || []);
 
     const profileData = {
       uid: cred.user.uid,
       email: cred.user.email,
       displayName: displayName || email.split('@')[0],
       photoURL: '',
-      role: assignedRole,
+      role: userRole,
       permissions,
       status: 'active',
       createdAt: serverTimestamp(),
       lastLoginAt: serverTimestamp(),
     };
+
     await setDoc(doc(db, 'users', cred.user.uid), profileData);
+    setCurrentUser(cred.user);
     setUserProfile(profileData);
+    saveCachedSession(cred.user, profileData);
+
+    logAudit({
+      user: email,
+      action: 'User Registration',
+      entity: 'auth',
+      entityId: cred.user.uid,
+      newValue: `Role: ${userRole}`,
+    });
+
     return cred.user;
   };
 
   const logout = async () => {
-    if (currentUser) {
+    if (currentUser?.email) {
       logAudit({
         user: currentUser.email,
-        action: 'User Logout',
+        action: 'User Sign Out',
         entity: 'auth',
         entityId: currentUser.uid,
-        newValue: 'Logged out',
+        newValue: 'Sign Out Completed',
       });
     }
-    return signOut(auth);
+    saveCachedSession(null, null);
+    try {
+      sessionStorage.removeItem('brainlink_dashboard_cache_v2');
+    } catch (e) {}
+    setCurrentUser(null);
+    setUserProfile(null);
+    setSimulatedRole(null);
+    await signOut(auth);
   };
 
-  const resetPassword = (email) => {
+  const resetPassword = async (email) => {
     return sendPasswordResetEmail(auth, email);
   };
 
-  const effectiveRole = simulatedRole || userProfile?.role || ROLES.CLIENT;
-  const isSuperAdmin = userProfile?.role === ROLES.SUPER_ADMIN || isUserSuperAdmin(currentUser?.email);
-
-  const checkPermission = (perm) => {
-    return hasPermission(effectiveRole, userProfile?.permissions, perm);
-  };
+  // Active role is either the simulated role (for testing) or actual assigned role
+  const effectiveRole = simulatedRole || userProfile?.role || ROLES.GUEST;
 
   const value = {
     currentUser,
     userProfile,
     role: effectiveRole,
-    realRole: userProfile?.role,
-    isSuperAdmin,
-    loading,
+    actualRole: userProfile?.role,
     simulatedRole,
     setSimulatedRole,
+    isSuperAdmin: effectiveRole === ROLES.SUPER_ADMIN,
+    loading,
     login,
     loginWithGoogle,
-    register,
+    signup,
     logout,
     resetPassword,
-    hasPermission: checkPermission,
+    hasPermission: (permission) => hasPermission(effectiveRole, permission),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
