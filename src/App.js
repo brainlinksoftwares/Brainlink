@@ -38,6 +38,14 @@ function AnimatedRoutes() {
   );
 
   if (isStudioDomain) {
+    // Break out of any infinite /dashboard/dashboard or /studio prefixes on the studio subdomain
+    if (location.pathname.includes('/dashboard/dashboard') || location.pathname.startsWith('/studio')) {
+      const cleanSubPath = location.pathname
+        .replace(/^\/studio\/?/, '/')
+        .replace(/(\/dashboard)+/g, '/dashboard');
+      return <Navigate to={cleanSubPath || '/dashboard'} replace />;
+    }
+
     return (
       <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -45,6 +53,12 @@ function AnimatedRoutes() {
         </Routes>
       </Suspense>
     );
+  }
+
+  // On main domain (brainlink.in), sanitize any dashboard looping under /studio
+  if (location.pathname.includes('/dashboard/dashboard')) {
+    const cleanMainPath = location.pathname.replace(/(\/dashboard)+/g, '/dashboard');
+    return <Navigate to={cleanMainPath} replace />;
   }
 
   return (

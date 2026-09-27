@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Sparkles,
 } from 'lucide-react';
+import { useStudioBase } from '../../context/StudioBaseContext';
 import { getLeads } from '../../services/crmService';
 import { getProjects } from '../../services/projectService';
 import { getInvoices } from '../../services/financeService';
@@ -139,8 +140,11 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   const displayItems = query.trim() ? results : quickNav;
 
+  const { basePath } = useStudioBase();
+
   const handleSelect = (url) => {
-    navigate(url);
+    const fullUrl = basePath ? `${basePath}${url.startsWith('/') ? url : `/${url}`}` : url;
+    navigate(fullUrl);
     onClose();
   };
 

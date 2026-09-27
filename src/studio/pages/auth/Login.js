@@ -5,10 +5,13 @@ import { useToast } from '../../context/ToastContext';
 import { Lock, Mail, ArrowRight, Shield } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
 
+import { useStudioBase } from '../../context/StudioBaseContext';
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, loginWithGoogle, resetPassword } = useAuth();
+  const { basePath } = useStudioBase();
   const toast = useToast();
 
   const [email, setEmail] = useState('');
@@ -18,7 +21,11 @@ export default function Login() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
 
-  const from = location.state?.from?.pathname || '/';
+  const defaultDashboard = basePath ? `${basePath}/dashboard` : '/dashboard';
+  const rawFrom = location.state?.from?.pathname;
+  const from = (rawFrom && !rawFrom.includes('/login') && !rawFrom.includes('/dashboard/dashboard'))
+    ? (rawFrom.startsWith('/studio') && !basePath ? (rawFrom.replace(/^\/studio/, '') || defaultDashboard) : rawFrom)
+    : defaultDashboard;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

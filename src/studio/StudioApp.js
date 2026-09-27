@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { StudioBaseProvider, useStudioBase } from './context/StudioBaseContext';
 import StudioLayout from './components/layout/StudioLayout';
 import './studio.css';
 
@@ -39,6 +40,7 @@ const Settings = lazy(() => import('./pages/admin/Settings'));
 
 function ProtectedRoute({ children }) {
   const { currentUser, loading } = useAuth();
+  const { basePath } = useStudioBase();
   const location = useLocation();
 
   if (loading) {
@@ -53,106 +55,122 @@ function ProtectedRoute({ children }) {
   }
 
   if (!currentUser) {
-    return <Navigate to="/studio/login" state={{ from: location }} replace />;
+    const loginTarget = basePath ? `${basePath}/login` : '/login';
+    return <Navigate to={loginTarget} state={{ from: location }} replace />;
   }
 
   return children;
 }
 
+function StudioRoutes() {
+  const { basePath } = useStudioBase();
+  const dashboardPath = basePath ? `${basePath}/dashboard` : '/dashboard';
+
+  return (
+    <Routes>
+      {/* Auth Routes */}
+      <Route path="login" element={<Login />} />
+      <Route path="forgot-password" element={<Login />} />
+
+      {/* Safety: If /studio prefix is matched inside StudioApp, strip and redirect to absolute dashboard */}
+      <Route path="studio/*" element={<Navigate to={dashboardPath} replace />} />
+
+      {/* Protected Studio App Shell */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <StudioLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to={dashboardPath} replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
+
+        {/* CRM */}
+        <Route path="crm">
+          <Route index element={<Navigate to={basePath ? `${basePath}/crm/leads` : '/crm/leads'} replace />} />
+          <Route path="leads" element={<Leads />} />
+          <Route path="contacts" element={<Contacts />} />
+          <Route path="companies" element={<Companies />} />
+          <Route path="activities" element={<Activities />} />
+        </Route>
+
+        {/* Sales */}
+        <Route path="sales">
+          <Route index element={<Navigate to={basePath ? `${basePath}/sales/pipeline` : '/sales/pipeline'} replace />} />
+          <Route path="pipeline" element={<PipelineKanban />} />
+          <Route path="deals" element={<Deals />} />
+          <Route path="meetings" element={<Meetings />} />
+          <Route path="proposals" element={<Proposals />} />
+          <Route path="quotations" element={<Quotations />} />
+        </Route>
+
+        {/* Clients */}
+        <Route path="clients">
+          <Route index element={<ClientsList />} />
+          <Route path="onboarding" element={<ClientOnboarding />} />
+          <Route path=":id" element={<ClientDetail />} />
+        </Route>
+        <Route path="portal/*" element={<ClientPortal />} />
+
+        {/* Projects */}
+        <Route path="projects">
+          <Route index element={<ProjectsList />} />
+          <Route path="milestones" element={<Milestones />} />
+          <Route path="tasks" element={<Tasks />} />
+          <Route path="time-tracking" element={<TimeTracking />} />
+          <Route path="time" element={<Navigate to={basePath ? `${basePath}/projects/time-tracking` : '/projects/time-tracking'} replace />} />
+        </Route>
+
+        {/* Finance */}
+        <Route path="finance">
+          <Route index element={<FinanceDashboard />} />
+          <Route path="invoices" element={<Invoices />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="expenses" element={<Expenses />} />
+          <Route path="transactions" element={<Transactions />} />
+        </Route>
+
+        {/* Documents */}
+        <Route path="documents" element={<Documents />} />
+
+        {/* Team */}
+        <Route path="team" element={<Team />} />
+
+        {/* Reports */}
+        <Route path="reports" element={<Reports />} />
+
+        {/* Administration */}
+        <Route path="admin">
+          <Route index element={<Navigate to={basePath ? `${basePath}/admin/settings` : '/admin/settings'} replace />} />
+          <Route path="users" element={<UsersManagement />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+
+        {/* Catch-all MUST BE ABSOLUTE PATH, never relative to avoid recursive loops */}
+        <Route path="*" element={<Navigate to={dashboardPath} replace />} />
+      </Route>
+    </Routes>
+  );
+}
+
 export default function StudioApp({ basePath = '/studio' }) {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <Suspense
-          fallback={
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center text-slate-400 text-xs">
-              <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-            </div>
-          }
-        >
-          <Routes>
-            {/* Auth */}
-            <Route path="login" element={<Login />} />
-            <Route path="forgot-password" element={<Login />} />
-
-            {/* Protected Studio App Shell */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <StudioLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-
-              {/* CRM */}
-              <Route path="crm">
-                <Route index element={<Navigate to="leads" replace />} />
-                <Route path="leads" element={<Leads />} />
-                <Route path="contacts" element={<Contacts />} />
-                <Route path="companies" element={<Companies />} />
-                <Route path="activities" element={<Activities />} />
-              </Route>
-
-              {/* Sales */}
-              <Route path="sales">
-                <Route index element={<Navigate to="pipeline" replace />} />
-                <Route path="pipeline" element={<PipelineKanban />} />
-                <Route path="deals" element={<Deals />} />
-                <Route path="meetings" element={<Meetings />} />
-                <Route path="proposals" element={<Proposals />} />
-                <Route path="quotations" element={<Quotations />} />
-              </Route>
-
-              {/* Clients */}
-              <Route path="clients">
-                <Route index element={<ClientsList />} />
-                <Route path="onboarding" element={<ClientOnboarding />} />
-                <Route path=":id" element={<ClientDetail />} />
-              </Route>
-              <Route path="portal/*" element={<ClientPortal />} />
-
-              {/* Projects */}
-              <Route path="projects">
-                <Route index element={<ProjectsList />} />
-                <Route path="milestones" element={<Milestones />} />
-                <Route path="tasks" element={<Tasks />} />
-                <Route path="time-tracking" element={<TimeTracking />} />
-              </Route>
-
-              {/* Finance */}
-              <Route path="finance">
-                <Route index element={<FinanceDashboard />} />
-                <Route path="invoices" element={<Invoices />} />
-                <Route path="payments" element={<Payments />} />
-                <Route path="expenses" element={<Expenses />} />
-                <Route path="transactions" element={<Transactions />} />
-              </Route>
-
-              {/* Documents */}
-              <Route path="documents" element={<Documents />} />
-
-              {/* Team */}
-              <Route path="team" element={<Team />} />
-
-              {/* Reports */}
-              <Route path="reports" element={<Reports />} />
-
-              {/* Administration */}
-              <Route path="admin">
-                <Route index element={<Navigate to="settings" replace />} />
-                <Route path="users" element={<UsersManagement />} />
-                <Route path="audit-logs" element={<AuditLogs />} />
-                <Route path="settings" element={<Settings />} />
-              </Route>
-
-              <Route path="*" element={<Navigate to="dashboard" replace />} />
-            </Route>
-          </Routes>
-        </Suspense>
-      </ToastProvider>
-    </AuthProvider>
+    <StudioBaseProvider basePath={basePath}>
+      <AuthProvider>
+        <ToastProvider>
+          <Suspense
+            fallback={
+              <div className="min-h-screen bg-slate-900 flex items-center justify-center text-slate-400 text-xs">
+                <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+              </div>
+            }
+          >
+            <StudioRoutes />
+          </Suspense>
+        </ToastProvider>
+      </AuthProvider>
+    </StudioBaseProvider>
   );
 }

@@ -24,9 +24,21 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../context/rbac';
+import { useStudioBase } from '../../context/StudioBaseContext';
+
+function StudioNavLink({ to, children, ...props }) {
+  const { basePath } = useStudioBase();
+  const target = basePath ? `${basePath}${to.startsWith('/') ? to : `/${to}`}` : to;
+  return (
+    <NavLink to={target} {...props}>
+      {children}
+    </NavLink>
+  );
+}
 
 export default function Sidebar({ isOpen, onClose }) {
   const { userProfile, role, logout } = useAuth();
+  const { basePath } = useStudioBase();
   const [openGroups, setOpenGroups] = useState({
     crm: true,
     sales: true,
@@ -71,7 +83,7 @@ export default function Sidebar({ isOpen, onClose }) {
       >
         {/* Header */}
         <div className="h-14 px-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
-          <NavLink to="/" className="flex items-center gap-2.5 text-decoration-none">
+          <StudioNavLink to="/dashboard" className="flex items-center gap-2.5 text-decoration-none">
             <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-xs">
               BS
             </div>
@@ -83,7 +95,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 STUDIO
               </span>
             </div>
-          </NavLink>
+          </StudioNavLink>
 
           <button
             onClick={onClose}
@@ -101,30 +113,30 @@ export default function Sidebar({ isOpen, onClose }) {
               <div className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 Client Workspace
               </div>
-              <NavLink to="/portal" className={navLinkClass} onClick={onClose}>
+              <StudioNavLink to="/portal" className={navLinkClass} onClick={onClose}>
                 {({ isActive }) => (
                   <div className="flex items-center gap-2.5">
                     <LayoutDashboard className={iconClass(isActive)} />
                     <span>My Dashboard</span>
                   </div>
                 )}
-              </NavLink>
-              <NavLink to="/invoices" className={navLinkClass} onClick={onClose}>
+              </StudioNavLink>
+              <StudioNavLink to="/invoices" className={navLinkClass} onClick={onClose}>
                 {({ isActive }) => (
                   <div className="flex items-center gap-2.5">
                     <FileText className={iconClass(isActive)} />
                     <span>Invoices & Payments</span>
                   </div>
                 )}
-              </NavLink>
-              <NavLink to="/documents" className={navLinkClass} onClick={onClose}>
+              </StudioNavLink>
+              <StudioNavLink to="/documents" className={navLinkClass} onClick={onClose}>
                 {({ isActive }) => (
                   <div className="flex items-center gap-2.5">
                     <FolderGit2 className={iconClass(isActive)} />
                     <span>Project Vault</span>
                   </div>
                 )}
-              </NavLink>
+              </StudioNavLink>
             </div>
           ) : (
             <>
@@ -133,14 +145,14 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                   Workspace
                 </div>
-                <NavLink to="/dashboard" className={navLinkClass} onClick={onClose}>
+                <StudioNavLink to="/dashboard" className={navLinkClass} onClick={onClose}>
                   {({ isActive }) => (
                     <div className="flex items-center gap-2.5">
                       <LayoutDashboard className={iconClass(isActive)} />
                       <span>Executive Dashboard</span>
                     </div>
                   )}
-                </NavLink>
+                </StudioNavLink>
               </div>
 
               {/* CRM */}
@@ -154,38 +166,38 @@ export default function Sidebar({ isOpen, onClose }) {
                 </button>
                 {openGroups.crm && (
                   <div className="space-y-0.5 pl-1">
-                    <NavLink to="/crm/leads" className={navLinkClass} onClick={onClose}>
+                    <StudioNavLink to="/crm/leads" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Users className={iconClass(isActive)} />
                           <span>Leads</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/crm/contacts" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/crm/contacts" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Users className={iconClass(isActive)} />
                           <span>Contacts</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/crm/companies" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/crm/companies" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Building2 className={iconClass(isActive)} />
                           <span>Companies</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/crm/activities" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/crm/activities" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Clock className={iconClass(isActive)} />
                           <span>Activities</span>
                         </div>
                       )}
-                    </NavLink>
+                    </StudioNavLink>
                   </div>
                 )}
               </div>
@@ -201,46 +213,46 @@ export default function Sidebar({ isOpen, onClose }) {
                 </button>
                 {openGroups.sales && (
                   <div className="space-y-0.5 pl-1">
-                    <NavLink to="/sales/pipeline" className={navLinkClass} onClick={onClose}>
+                    <StudioNavLink to="/sales/pipeline" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Layers className={iconClass(isActive)} />
                           <span>Pipeline Kanban</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/sales/deals" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/sales/deals" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <TrendingUp className={iconClass(isActive)} />
                           <span>Deals</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/sales/meetings" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/sales/meetings" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Calendar className={iconClass(isActive)} />
                           <span>Meetings</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/sales/proposals" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/sales/proposals" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <FileCheck2 className={iconClass(isActive)} />
                           <span>Proposals</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/sales/quotations" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/sales/quotations" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <FileText className={iconClass(isActive)} />
                           <span>Quotations</span>
                         </div>
                       )}
-                    </NavLink>
+                    </StudioNavLink>
                   </div>
                 )}
               </div>
@@ -256,22 +268,22 @@ export default function Sidebar({ isOpen, onClose }) {
                 </button>
                 {openGroups.clients && (
                   <div className="space-y-0.5 pl-1">
-                    <NavLink to="/clients" className={navLinkClass} onClick={onClose}>
+                    <StudioNavLink to="/clients" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Building2 className={iconClass(isActive)} />
                           <span>Directory</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/clients/onboarding" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/clients/onboarding" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <CheckSquare className={iconClass(isActive)} />
                           <span>Onboarding</span>
                         </div>
                       )}
-                    </NavLink>
+                    </StudioNavLink>
                   </div>
                 )}
               </div>
@@ -287,38 +299,38 @@ export default function Sidebar({ isOpen, onClose }) {
                 </button>
                 {openGroups.projects && (
                   <div className="space-y-0.5 pl-1">
-                    <NavLink to="/projects" className={navLinkClass} onClick={onClose}>
+                    <StudioNavLink to="/projects" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <FolderGit2 className={iconClass(isActive)} />
                           <span>Deliveries</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/projects/milestones" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/projects/milestones" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Layers className={iconClass(isActive)} />
                           <span>Milestones</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/projects/tasks" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/projects/tasks" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <CheckSquare className={iconClass(isActive)} />
                           <span>Sprint Tasks</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/projects/time" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/projects/time-tracking" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Clock className={iconClass(isActive)} />
                           <span>Time Tracking</span>
                         </div>
                       )}
-                    </NavLink>
+                    </StudioNavLink>
                   </div>
                 )}
               </div>
@@ -334,46 +346,46 @@ export default function Sidebar({ isOpen, onClose }) {
                 </button>
                 {openGroups.finance && (
                   <div className="space-y-0.5 pl-1">
-                    <NavLink to="/finance" className={navLinkClass} onClick={onClose}>
+                    <StudioNavLink to="/finance" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <PieChart className={iconClass(isActive)} />
                           <span>Overview</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/finance/invoices" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/finance/invoices" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <FileText className={iconClass(isActive)} />
                           <span>GST Invoices</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/finance/payments" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/finance/payments" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <CreditCard className={iconClass(isActive)} />
                           <span>Payments</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/finance/expenses" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/finance/expenses" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <Receipt className={iconClass(isActive)} />
                           <span>Expenses</span>
                         </div>
                       )}
-                    </NavLink>
-                    <NavLink to="/finance/transactions" className={navLinkClass} onClick={onClose}>
+                    </StudioNavLink>
+                    <StudioNavLink to="/finance/transactions" className={navLinkClass} onClick={onClose}>
                       {({ isActive }) => (
                         <div className="flex items-center gap-2.5">
                           <ShieldAlert className={iconClass(isActive)} />
                           <span>Auditable Ledger</span>
                         </div>
                       )}
-                    </NavLink>
+                    </StudioNavLink>
                   </div>
                 )}
               </div>
@@ -383,38 +395,38 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                   Analytics & Admin
                 </div>
-                <NavLink to="/reports" className={navLinkClass} onClick={onClose}>
+                <StudioNavLink to="/reports" className={navLinkClass} onClick={onClose}>
                   {({ isActive }) => (
                     <div className="flex items-center gap-2.5">
                       <PieChart className={iconClass(isActive)} />
                       <span>Analytics</span>
                     </div>
                   )}
-                </NavLink>
-                <NavLink to="/documents" className={navLinkClass} onClick={onClose}>
+                </StudioNavLink>
+                <StudioNavLink to="/documents" className={navLinkClass} onClick={onClose}>
                   {({ isActive }) => (
                     <div className="flex items-center gap-2.5">
                       <FolderGit2 className={iconClass(isActive)} />
                       <span>Document Vault</span>
                     </div>
                   )}
-                </NavLink>
-                <NavLink to="/team" className={navLinkClass} onClick={onClose}>
+                </StudioNavLink>
+                <StudioNavLink to="/team" className={navLinkClass} onClick={onClose}>
                   {({ isActive }) => (
                     <div className="flex items-center gap-2.5">
                       <Users className={iconClass(isActive)} />
                       <span>Team & RBAC</span>
                     </div>
                   )}
-                </NavLink>
-                <NavLink to="/admin/settings" className={navLinkClass} onClick={onClose}>
+                </StudioNavLink>
+                <StudioNavLink to="/admin/settings" className={navLinkClass} onClick={onClose}>
                   {({ isActive }) => (
                     <div className="flex items-center gap-2.5">
                       <Settings className={iconClass(isActive)} />
                       <span>Settings</span>
                     </div>
                   )}
-                </NavLink>
+                </StudioNavLink>
               </div>
             </>
           )}

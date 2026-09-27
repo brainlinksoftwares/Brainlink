@@ -15,8 +15,11 @@ import {
   CheckSquare,
 } from 'lucide-react';
 
+import { useStudioBase } from '../../context/StudioBaseContext';
+
 export default function QuickActionModal({ isOpen, onClose }) {
   const navigate = useNavigate();
+  const { basePath } = useStudioBase();
 
   const actions = [
     { id: 'lead', title: 'New Lead', icon: Users, path: '/crm/leads' },
@@ -33,7 +36,8 @@ export default function QuickActionModal({ isOpen, onClose }) {
   ];
 
   const handleSelect = (action) => {
-    navigate(action.path);
+    const fullUrl = basePath ? `${basePath}${action.path.startsWith('/') ? action.path : `/${action.path}`}` : action.path;
+    navigate(fullUrl);
     onClose();
   };
 
