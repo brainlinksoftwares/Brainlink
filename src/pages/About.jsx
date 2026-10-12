@@ -7,7 +7,6 @@ import SectionHeading from "../components/SectionHeading";
 import Reveal, { StaggerGroup, StaggerItem } from "../components/Reveal";
 import { coreValues } from "../data/values";
 import { siteConfig } from "../data/siteConfig";
-import FounderSpotlight from "../components/FounderSpotlight";
 import pageMeta from "../data/pageMeta.json";
 
 const meta = pageMeta["/about"];
@@ -44,13 +43,6 @@ export default function About() {
               that stays reachable after launch.
             </p>
           </Reveal>
-        </div>
-      </section>
-
-      {/* Founder */}
-      <section className="section" id="founder" style={{ background: "var(--bg-card2)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-        <div className="container">
-          <FounderSpotlight />
         </div>
       </section>
 
