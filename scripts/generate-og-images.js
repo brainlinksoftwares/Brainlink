@@ -19,7 +19,6 @@ const CARDS = {
   "/services": { slug: "services", label: "Services", headline: "Web, mobile, SaaS & custom software development." },
   "/work": { slug: "work", label: "Case Studies", headline: "Real client work — problem, approach and outcome." },
   "/about": { slug: "about", label: "About Us", headline: "A software studio built on direct collaboration." },
-  "/founder": { slug: "founder", label: "Meet the Founder", headline: "Aaditya Vishnoi", sub: "Founder & Lead Engineer", photo: "images/founder/aaditya-vishnoi-founder-brainlink-softwares.jpeg" },
   "/pricing": { slug: "pricing", label: "Pricing", headline: "Transparent engagement models for every stage." },
   "/careers": { slug: "careers", label: "Careers & Internships", headline: "Grow by building real software, with mentorship." },
   "/contact": { slug: "contact", label: "Contact", headline: "Let's talk about what you want to build." },

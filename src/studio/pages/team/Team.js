@@ -61,7 +61,7 @@ export default function Team() {
             id: 'tm-1',
             name: 'Aaditya Vishnoi',
             email: 'vishnoiaaditya29@gmail.com',
-            role: 'Founder & CEO',
+            role: 'CEO',
             department: 'Executive Leadership',
             type: 'Employee',
             status: 'Active',

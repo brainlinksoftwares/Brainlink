@@ -1,5 +1,4 @@
 import { Helmet } from "react-helmet-async";
-import { founder } from "../data/founder";
 import pageMeta from "../data/pageMeta.json";
 
 const SITE_URL = "https://www.brainlink.in";
@@ -85,12 +84,6 @@ export const organizationSchema = {
   "telephone": "+91-94123-30177",
   "priceRange": "₹₹",
   "@id": `${SITE_URL}/#organization`,
-  "founder": {
-    "@type": "Person",
-    "@id": `${SITE_URL}${founder.path}#person`,
-    "name": founder.name,
-    "url": `${SITE_URL}${founder.path}`,
-  },
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "Meena Market Road, Kanth",
@@ -156,48 +149,6 @@ export function articleSchema({ title, description, image, datePublished, dateMo
       "logo": { "@type": "ImageObject", "url": DEFAULT_IMAGE },
     },
     "mainEntityOfPage": `${SITE_URL}${path}`,
-  };
-}
-
-/** Person entity for the founder — referenced from the Organization by @id. */
-export const personSchema = {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  "@id": `${SITE_URL}${founder.path}#person`,
-  "name": founder.name,
-  "givenName": founder.firstName,
-  "familyName": founder.name.split(" ").slice(1).join(" "),
-  "jobTitle": founder.role,
-  "description": founder.summary,
-  "url": `${SITE_URL}${founder.path}`,
-  "image": {
-    "@type": "ImageObject",
-    "url": `${SITE_URL}${founder.portrait.src}`,
-    "width": founder.portrait.width,
-    "height": founder.portrait.height,
-    "caption": founder.portrait.alt,
-  },
-  "worksFor": { "@id": `${SITE_URL}/#organization`, "@type": "Organization", "name": SITE_NAME, "url": SITE_URL },
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "Moradabad",
-    "addressRegion": "Uttar Pradesh",
-    "addressCountry": "IN",
-  },
-  "knowsAbout": founder.knowsAbout,
-  ...(founder.sameAs.length ? { "sameAs": founder.sameAs } : {}),
-};
-
-export function profilePageSchema({ path, name, description }) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "ProfilePage",
-    "name": name,
-    "description": description,
-    "url": `${SITE_URL}${path}`,
-    "mainEntity": { "@id": personSchema["@id"] },
-    "primaryImageOfPage": { "@type": "ImageObject", "url": personSchema.image.url },
-    "isPartOf": { "@type": "WebSite", "name": SITE_NAME, "url": SITE_URL },
   };
 }
 

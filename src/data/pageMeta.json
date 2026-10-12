@@ -19,13 +19,6 @@
     "description": "Brainlink Softwares is an MSME-registered software engineering studio in Uttar Pradesh, building scalable digital products through direct, transparent collaboration.",
     "image": "/og/about.jpg"
   },
-  "/founder": {
-    "title": "Aaditya Vishnoi — Founder & Lead Engineer",
-    "description": "Aaditya Vishnoi is the founder and lead engineer of Brainlink Softwares, an MSME-registered software studio in Kanth, Moradabad, helping businesses and founders build scalable web, mobile and SaaS products.",
-    "image": "/og/founder.jpg",
-    "imageAlt": "Aaditya Vishnoi, Founder & Lead Engineer of Brainlink Softwares",
-    "type": "profile"
-  },
   "/pricing": {
     "title": "Pricing & Engagement Models",
     "description": "Transparent engagement models for software development — starter websites, custom product development, dedicated development support, and enterprise solutions.",

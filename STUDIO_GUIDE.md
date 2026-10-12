@@ -28,7 +28,7 @@ $$\text{Lead Generation} \longrightarrow \text{CRM} \longrightarrow \text{Sales 
 ## 2. Super Admin Credentials & Provisioning
 
 Initial authorized Super Administrators:
-1. `vishnoiaaditya29@gmail.com` (Founder / CEO Aaditya Vishnoi)
+1. `vishnoiaaditya29@gmail.com` (CEO Aaditya Vishnoi)
 2. `ceo.brainlink@gmail.com` (Super Admin)
 
 ### Provisioning Workflow

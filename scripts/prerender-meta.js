@@ -6,7 +6,7 @@
  * Why: this is a client-rendered SPA, so crawlers that don't run JavaScript
  * (WhatsApp, LinkedIn, Facebook, X, Slack link previews) only ever saw the
  * generic index.html. Vercel serves these static files before the SPA
- * rewrite, so /founder now ships founder-specific tags. Blog posts are
+ * rewrite, so each route now ships page-specific tags. Blog posts are
  * handled per request by api/blog-page.js.
  */
 const fs = require("fs");

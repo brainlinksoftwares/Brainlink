@@ -281,7 +281,7 @@ export default function Login() {
                   }}
                   className="st-btn-secondary st-btn-sm"
                 >
-                  Founder
+                  Admin
                 </button>
                 <button
                   type="button"
