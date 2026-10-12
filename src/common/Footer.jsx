@@ -21,7 +21,6 @@ const linkGroups = [
     title: "Company",
     links: [
       { l: "About", h: "/about" },
-      { l: "Founder", h: "/founder" },
       { l: "Careers", h: "/careers" },
       { l: "Contact", h: "/contact" },
     ],
