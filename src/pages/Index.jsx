@@ -23,7 +23,7 @@ import pageMeta from "../data/pageMeta.json";
 const meta = pageMeta["/"];
 
 export default function Index() {
-  const omPictures = featuredProjects.find((p) => p.id === "om-pictures");
+  const spotlight = featuredProjects.find((p) => p.id === "examshield");
 
   return (
     <Layout>
@@ -35,10 +35,10 @@ export default function Index() {
       />
 
       {/* ── 1. HERO ──────────────────────────────────────────── */}
-      <section style={{ padding: "112px 24px 80px" }}>
+      <section style={{ padding: "112px 24px 96px" }}>
         <div className="container hero-grid" style={{ display: "grid", gridTemplateColumns: "1.05fr 0.95fr", gap: 56, alignItems: "center" }}>
           <Reveal>
-            <span className="label">Software Engineering & Digital Product Studio</span>
+            <span className="eyebrow">Software Engineering & Digital Product Studio</span>
             <h1
               style={{
                 fontSize: "clamp(3.25rem, 6vw, 6rem)",
@@ -49,23 +49,28 @@ export default function Index() {
                 letterSpacing: "-0.02em",
               }}
             >
-              Digital Products Built For Real Business Growth.
+              Digital Products Built For <span className="text-blue-lg">Real Business Growth.</span>
             </h1>
             <p style={{ fontSize: "1.1rem", color: "var(--muted)", lineHeight: 1.7, marginBottom: 32, maxWidth: 520 }}>
               Brainlink Softwares helps businesses and ambitious founders build scalable software, modern websites,
               mobile applications and digital platforms.
             </p>
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 28 }}>
-              <Link to="/contact" className="btn-primary" style={{ fontSize: "0.95rem", padding: "13px 26px" }}>
+              <Link to="/contact" className="btn btn-primary" style={{ fontSize: "0.95rem", padding: "13px 26px" }}>
                 Start A Project <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link to="/work" className="btn-secondary" style={{ fontSize: "0.95rem", padding: "13px 26px" }}>
+              <Link to="/work" className="btn btn-outline btn-primary" style={{ fontSize: "0.95rem", padding: "13px 26px" }}>
                 View Our Work
               </Link>
             </div>
             <p style={{ fontSize: "0.85rem", color: "var(--muted2)" }}>
               Strategy, design, development and technical support under one roof.
             </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 20 }}>
+              <span className="badge badge-primary badge-outline" style={{ padding: "12px 12px" }}>MSME Registered</span>
+              <span className="badge badge-partner" style={{ padding: "12px 12px" }}>Tech Partner of Code ACE</span>
+              <span className="badge badge-primary badge-outline" style={{ padding: "12px 12px" }}>Makers of ExamShield</span>
+            </div>
           </Reveal>
 
           <Reveal delay={0.1} className="hero-visual-wrap">
@@ -79,10 +84,10 @@ export default function Index() {
         <div className="container">
           <SectionHeading
             label="Our Work"
-            title="Selected Client Work"
-            subtitle="Verified engagements — shown honestly, without an inflated client count."
+            title="Selected Work"
+            subtitle="Client projects, a technology partnership and our own product — shown honestly, without an inflated client count."
           />
-          <StaggerGroup style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 28 }}>
+          <StaggerGroup style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))", gap: 28 }}>
             {featuredProjects.map((project) => (
               <StaggerItem key={project.id}>
                 <ProjectCard project={project} />
@@ -108,35 +113,35 @@ export default function Index() {
             ))}
           </StaggerGroup>
           <div style={{ textAlign: "center", marginTop: 40 }}>
-            <Link to="/services" className="btn-secondary" style={{ fontSize: "0.9rem" }}>
+            <Link to="/services" className="btn btn-outline btn-primary" style={{ fontSize: "0.9rem" }}>
               View All Services <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── 4. FEATURED PROJECT: OM PICTURES ─────────────────── */}
-      {omPictures && (
+      {/* ── 4. SPOTLIGHT: EXAMSHIELD (OUR OWN PRODUCT) ──────── */}
+      {spotlight && (
         <section className="section">
           <div className="container">
             <div className="editorial-grid editorial-grid-reverse" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 56, alignItems: "center" }}>
               <Reveal className="editorial-visual-first" style={{ position: "relative" }}>
-                <BrowserMockup accent="#B45309" style={{ maxWidth: 420, margin: "0 auto" }} />
-                <PhoneMockup accent="#B45309" style={{ position: "absolute", bottom: -20, left: "8%" }} />
+                <BrowserMockup accent="var(--accent)" style={{ maxWidth: 420, margin: "0 auto" }} />
+                <PhoneMockup accent="var(--blue)" style={{ position: "absolute", bottom: -20, left: "8%" }} />
               </Reveal>
               <Reveal delay={0.1}>
-                <span className="label">{omPictures.industry}</span>
-                <h2 className="section-title">{omPictures.headline}</h2>
+                <span className="eyebrow">Our Own Product</span>
+                <h2 className="section-title">{spotlight.headline}</h2>
                 <p style={{ color: "var(--muted)", fontSize: "1rem", lineHeight: 1.75, marginBottom: 24 }}>
-                  {omPictures.shortDescription}
+                  {spotlight.shortDescription}
                 </p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28 }}>
-                  {omPictures.services.map((s) => (
-                    <span key={s} className="tech-pill" style={{ fontSize: "0.75rem" }}>{s}</span>
+                  {spotlight.services.map((s) => (
+                    <span key={s} className="badge badge-ghost" style={{ padding: "12px 12px", border: "1px solid var(--border)", background: "var(--bg-card2)", color: "var(--text)" }}>{s}</span>
                   ))}
                 </div>
-                <Link to={`/work#${omPictures.id}`} className="btn-secondary" style={{ fontSize: "0.9rem" }}>
-                  View Case Study <ArrowRight size={15} aria-hidden="true" />
+                <Link to={`/work#${spotlight.id}`} className="btn btn-outline btn-primary" style={{ fontSize: "0.9rem" }}>
+                  Explore ExamShield <ArrowRight size={15} aria-hidden="true" />
                 </Link>
               </Reveal>
             </div>
@@ -169,8 +174,12 @@ export default function Index() {
 
       {/* ── 7. TECHNOLOGY STACK ──────────────────────────────── */}
       <section className="section" style={{ background: "var(--bg-card2)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-        <div className="container" style={{ maxWidth: 720 }}>
-          <SectionHeading label="Our Stack" title="Technologies We Build With" subtitle="Verified technologies we actually use in production — nothing aspirational." />
+        <div className="container">
+          <SectionHeading
+            label="Our Stack"
+            title="Technologies We Build With"
+            subtitle="The stack behind ExamShield, Code ACE and this website — tools we run in production, not a wish list."
+          />
           <TechStack modules={techModules} />
         </div>
       </section>
@@ -198,7 +207,7 @@ export default function Index() {
             })}
           </StaggerGroup>
           <div style={{ textAlign: "center" }}>
-            <Link to="/careers" className="btn-primary" style={{ fontSize: "0.9rem" }}>
+            <Link to="/careers" className="btn btn-primary" style={{ fontSize: "0.9rem" }}>
               Explore Opportunities <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
@@ -216,10 +225,10 @@ export default function Index() {
               Let's discuss your idea and create a practical plan to design, develop and launch it.
             </p>
             <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-              <Link to="/contact" className="btn-primary" style={{ fontSize: "0.95rem", padding: "13px 28px" }}>
+              <Link to="/contact" className="btn btn-primary" style={{ fontSize: "0.95rem", padding: "13px 28px" }}>
                 <Phone size={16} aria-hidden="true" /> Start A Project
               </Link>
-              <a href={siteConfig.whatsappHref()} target="_blank" rel="noopener noreferrer" className="btn-whatsapp" style={{ fontSize: "0.95rem", padding: "13px 28px" }}>
+              <a href={siteConfig.whatsappHref()} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp" style={{ fontSize: "0.95rem", padding: "13px 28px" }}>
                 <WhatsAppIcon width={17} height={17} /> Chat On WhatsApp
               </a>
             </div>

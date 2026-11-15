@@ -28,7 +28,7 @@ export default function NotFound() {
         <p style={{ color: "var(--muted)", fontSize: "0.95rem", marginBottom: 36, maxWidth: 360, lineHeight: 1.75 }}>
           The page you're looking for doesn't exist or has been moved.
         </p>
-        <Link to="/" className="btn-primary">← Back to Home</Link>
+        <Link to="/" className="btn btn-primary">← Back to Home</Link>
       </div>
     </Layout>
   );

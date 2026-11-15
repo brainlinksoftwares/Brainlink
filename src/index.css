@@ -1,20 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Surfaces */
-  --bg:       #F7F8FA;
-  --bg-card:  #FFFFFF;
-  --bg-card2: #F1F4F8;
+/*
+ * Theme tokens. The site is themed with daisyUI (see tailwind.config.js:
+ * "brainlink" / "brainlink-dark"); these variables mirror those themes so
+ * existing inline styles (var(--accent), var(--bg-card), ...) follow the
+ * active <html data-theme>.
+ */
+:root,
+[data-theme="brainlink"] {
+  color-scheme: light;
 
-  /* Brand */
-  --accent:      #315CFF;
-  --accent-h:    #2449D8;
-  --accent-soft: #EEF2FF;
-  --accent-rgb:  49,92,255;
+  /* Surfaces — white with a faint teal tint for alternating sections */
+  --bg:       #FFFFFF;
+  --bg-card:  #FFFFFF;
+  --bg-card2: #F3F9F8;
+
+  /* Brand — teal */
+  --accent:      #0F766E;
+  --accent-h:    #115E59;
+  --accent-soft: #E6F4F2;
+  --accent-rgb:  15,118,110;
+  --on-accent:   #FFFFFF;
+
+  /* Secondary brand — Dodger Blue. Use --blue for icons, borders, fills
+     and large text; --blue-text for small text (meets 4.5:1 on white). */
+  --blue:      #1E90FF;
+  --blue-text: #0A6AD6;
+  --blue-soft: #EAF4FF;
+  --blue-rgb:  30,144,255;
 
   /* Status (used by service status badges + certificate verification states) */
   --success:     #15803D;
@@ -23,30 +40,32 @@
   --danger-rgb:  220,38,38;
   --warning:     #B45309;
   --warning-rgb: 180,83,9;
-  --neutral:     #667085;
-  --neutral-rgb: 102,112,133;
+  --neutral:     #5B6B70;
+  --neutral-rgb: 91,107,112;
 
   --green:   #25D366;
   --green-h: #1EBE59;
 
   /* Text */
-  --text:   #111827;
-  --muted:  #667085;
-  --muted2: #8A94A6;
+  --text:   #0F2A2E;
+  --muted:  #4F6367;
+  --muted2: #7D8F92;
 
-  --border: #E5E9F0;
+  --border: #DCE9E7;
 
-  --nav-bg-scrolled: rgba(255,255,255,0.94);
+  --nav-bg:          #FFFFFF;
+  --nav-bg-scrolled: #FFFFFF;
   --mobile-menu-bg:  #FFFFFF;
-  --hamburger-bg:    #F1F4F8;
-  --hamburger-bar:   #111827;
+  --mock-dot:        #DCE9E7;
 
-  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-body:    'Inter', system-ui, sans-serif;
+  --shadow-sm: 0 1px 2px rgba(15,42,46,0.05);
+  --shadow-md: 0 8px 24px rgba(15,42,46,0.08);
+  --shadow-nav: 0 1px 0 rgba(15,42,46,0.04), 0 4px 16px rgba(15,42,46,0.05);
+}
 
-  --shadow-sm: 0 1px 3px rgba(17,24,39,0.06);
-  --shadow-md: 0 8px 24px rgba(17,24,39,0.08);
-  --shadow-nav: 0 1px 0 rgba(17,24,39,0.05), 0 4px 16px rgba(17,24,39,0.04);
+:root {
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Manrope', system-ui, sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,18 +78,24 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1, h2, h3, h4 {
   font-family: var(--font-heading);
   font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),0.3); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),0.35); border-radius: 6px; }
+
+/* Brand-coloured highlight text (solid teal, no gradients) */
+.text-brand { color: var(--accent); }
+.text-blue { color: var(--blue-text); }
+.text-blue-lg { color: var(--blue); } /* large headings only */
 
 /* ── Icon button (mobile menu toggle, small utility buttons) ─── */
 .icon-btn {
@@ -89,79 +114,101 @@ h1, h2, h3, h4 {
 }
 .icon-btn:hover { background: var(--accent-soft); border-color: rgba(var(--accent-rgb),0.3); }
 
-/* ── Buttons ──────────────────────────────────────────── */
-.btn-primary {
+/* Logo tile in header/footer */
+.brand-mark {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 12px 24px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.15s ease, transform 0.15s ease;
-  letter-spacing: 0;
-}
-.btn-primary:hover { background: var(--accent-h); }
-.btn-primary:active { transform: translateY(1px); }
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   background: var(--bg-card);
-  color: var(--text);
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 12px 24px;
-  border-radius: 10px;
   border: 1px solid var(--border);
-  cursor: pointer;
-  text-decoration: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
 }
-.btn-secondary:hover { border-color: var(--accent); background: var(--accent-soft); }
 
-.btn-whatsapp {
+/* ── Technology stack (home) ─────────────────────────── */
+.stack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+.stack-card { padding: 24px; gap: 16px; }
+.stack-card-head { display: flex; align-items: center; gap: 12px; }
+.stack-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: var(--green);
-  color: #fff;
+  justify-content: center;
+  color: var(--blue);
+  background: var(--blue-soft);
+  border: 1px solid rgba(var(--blue-rgb),0.22);
+  flex-shrink: 0;
+}
+.stack-item { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-top: 1px dashed var(--border); }
+.stack-item:first-child { border-top: none; padding-top: 0; }
+.stack-item-name { font-family: var(--font-heading); font-weight: 600; font-size: 0.92rem; color: var(--text); }
+.stack-item-note { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
+
+/* Tailwind preflight is off (Studio relies on that), so give daisyUI
+   components the solid border style preflight would normally provide. */
+.btn, .badge, .join-item, .input, .select, .textarea, .swap { border-style: solid; }
+
+/* ── Buttons (daisyUI .btn + brand tweaks) ─────────────── */
+.btn {
   font-family: var(--font-heading);
   font-weight: 600;
-  font-size: 0.9rem;
-  padding: 12px 24px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
+  text-transform: none;
   text-decoration: none;
-  transition: background 0.15s ease;
+  letter-spacing: 0;
+  gap: 8px;
 }
-.btn-whatsapp:hover { background: var(--green-h); }
+.btn-primary:not(.btn-outline) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.btn-primary:not(.btn-outline):hover { background: var(--accent-h); border-color: var(--accent-h); }
+.btn-whatsapp {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.btn-whatsapp:hover { background: var(--green-h); border-color: var(--green-h); color: #fff; }
 
 .section { padding: 96px 24px; position: relative; }
 .section-sm { padding: 64px 24px; }
 .container { max-width: 1200px; margin: 0 auto; position: relative; }
 
-.label {
-  display: inline-block;
+/* Section eyebrow (renamed from .label, which daisyUI reserves for forms) */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--font-heading);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 14px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(var(--accent-rgb),0.2);
+  padding: 6px 12px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
 }
 
 .section-title {
-  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+  font-size: clamp(1.85rem, 3.4vw, 2.75rem);
   color: var(--text);
   margin-bottom: 14px;
 }
@@ -170,28 +217,22 @@ h1, h2, h3, h4 {
   font-size: 1rem;
   color: var(--muted);
   line-height: 1.7;
-  max-width: 540px;
+  max-width: 560px;
   font-weight: 400;
 }
 
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--rounded-box, 1.25rem);
   padding: 28px;
   box-shadow: var(--shadow-sm);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 .card:hover {
-  border-color: rgba(var(--accent-rgb),0.35);
+  border-color: rgba(var(--accent-rgb),0.4);
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
-
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 0;
+  transform: translateY(-3px);
 }
 
 /* Responsive helpers */
@@ -269,7 +310,7 @@ h1, h2, h3, h4 {
   left: 12px;
   z-index: 2000;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   padding: 12px 20px;
   border-radius: 8px;
   font-family: var(--font-heading);
@@ -394,3 +435,7 @@ select:focus-visible,
 /* ── Minimal card hover arrow (services, projects) ───────── */
 .hover-arrow { display: inline-flex; transition: transform 0.2s ease; }
 a:hover > .hover-arrow, .card:hover .hover-arrow { transform: translateX(3px); }
+
+/* Project relationship badges — teal family, distinguished by fill */
+.badge-partner { background: var(--blue-soft); color: var(--blue-text); border: 1px solid var(--blue); }
+.badge-client  { background: var(--accent-soft); color: var(--accent-h); border: 1px solid rgba(var(--accent-rgb),0.25); }

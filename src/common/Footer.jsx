@@ -54,9 +54,9 @@ export default function Footer() {
 
           <div className="footer-brand">
             <Link to="/" style={{ display: "inline-flex", alignItems: "center", gap: 9, textDecoration: "none", marginBottom: 16 }}>
-              <img src={logo} alt="" style={{ height: 26, width: 26, objectFit: "contain" }} />
+              <span className="brand-mark"><img src={logo} alt="" style={{ height: 22, width: 22, objectFit: "contain" }} /></span>
               <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "0.95rem", color: "var(--text)" }}>
-                Brainlink <span style={{ color: "var(--accent)" }}>Softwares</span>
+                Brainlink <span className="text-blue">Softwares</span>
               </span>
             </Link>
             <p style={{ fontSize: "0.875rem", color: "var(--muted)", lineHeight: 1.7, maxWidth: 300, marginBottom: 24 }}>
@@ -71,14 +71,8 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  style={{
-                    width: 34, height: 34, borderRadius: 8,
-                    background: "var(--bg-card)", border: "1px solid var(--border)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "var(--muted)", textDecoration: "none", transition: "border-color 0.15s, color 0.15s",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--muted)"; }}
+                  className="btn btn-ghost btn-square btn-sm"
+                  style={{ border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--muted)" }}
                 >
                   <Icon width={15} height={15} />
                 </a>
@@ -122,7 +116,7 @@ export default function Footer() {
                 href={siteConfig.whatsappHref()}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ display: "flex", gap: 10, alignItems: "center", fontSize: "0.875rem", color: "#1EBE59", textDecoration: "none" }}
+                style={{ display: "flex", gap: 10, alignItems: "center", fontSize: "0.875rem", color: "var(--green-h)", textDecoration: "none" }}
               >
                 <WhatsAppIcon width={15} height={15} /> WhatsApp Us
               </a>

@@ -12,7 +12,7 @@ export default function BlogCard({ post }) {
           style={{ width: "100%", height: 200, objectFit: "cover", borderBottom: "1px solid var(--border)" }}
         />
       ) : (
-        <div style={{ width: "100%", height: 200, background: "rgba(255,255,255,0.03)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: "100%", height: 200, background: "var(--bg-card2)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <ImageIcon size={32} style={{ color: "var(--muted)" }} aria-hidden="true" />
         </div>
       )}

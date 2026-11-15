@@ -92,7 +92,7 @@ export default function VerifyCertificate() {
 
               <button
                 type="submit"
-                className="btn-primary"
+                className="btn btn-primary"
                 disabled={submitting}
                 style={{ justifyContent: "center", padding: "14px", width: "100%", opacity: submitting ? 0.75 : 1 }}
               >

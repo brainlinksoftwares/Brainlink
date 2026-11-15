@@ -93,7 +93,7 @@ export default function About() {
       <section className="section" style={{ background: "var(--bg-card)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
         <div className="container philosophy-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 56 }}>
           <Reveal>
-            <span className="label">Engineering Philosophy</span>
+            <span className="eyebrow">Engineering Philosophy</span>
             <h2 className="section-title" style={{ fontSize: "1.6rem" }}>Practical Over Impressive</h2>
             <p style={{ color: "var(--muted)", fontSize: "0.92rem", lineHeight: 1.85 }}>
               We choose technology because it solves your problem well, not because it looks good on a portfolio. That
@@ -103,7 +103,7 @@ export default function About() {
             </p>
           </Reveal>
           <Reveal delay={0.1}>
-            <span className="label">Transparency Commitment</span>
+            <span className="eyebrow">Transparency Commitment</span>
             <h2 className="section-title" style={{ fontSize: "1.6rem" }}>No Surprises, No Jargon</h2>
             <p style={{ color: "var(--muted)", fontSize: "0.92rem", lineHeight: 1.85 }}>
               You'll know what's being built, why, and what it costs before work starts — and you'll see progress on a
@@ -118,7 +118,7 @@ export default function About() {
       <section className="section">
         <div className="container" style={{ maxWidth: 760, textAlign: "center" }}>
           <SectionHeading label="Learning Culture" title="A Team That Grows Through Real Work" subtitle="We regularly bring in students and early-career developers for practical, mentored internship work — subject to current availability. It's how we keep fresh perspective in the team, and how we give back to people starting their careers." />
-          <Link to="/careers" className="btn-secondary" style={{ fontSize: "0.9rem" }}>See Careers & Internships</Link>
+          <Link to="/careers" className="btn btn-outline btn-primary" style={{ fontSize: "0.9rem" }}>See Careers & Internships</Link>
         </div>
       </section>
 
@@ -140,7 +140,7 @@ export default function About() {
           <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "clamp(1.8rem,4vw,2.6rem)", color: "var(--text)", marginBottom: 16 }}>
             Want to work together?
           </h2>
-          <Link to="/contact" className="btn-primary" style={{ padding: "14px 32px" }}>Let's Talk</Link>
+          <Link to="/contact" className="btn btn-primary" style={{ padding: "14px 32px" }}>Let's Talk</Link>
         </div>
       </section>
 

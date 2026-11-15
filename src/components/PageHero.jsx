@@ -15,7 +15,7 @@ export default function PageHero({ label, title, subtitle, children, maxWidth = 
     >
       <div style={{ maxWidth, margin: "0 auto" }}>
         <Reveal>
-          {label && <span className="label">{label}</span>}
+          {label && <span className="eyebrow">{label}</span>}
           <h1
             style={{
               fontSize: "clamp(2.1rem, 4.5vw, 3.2rem)",

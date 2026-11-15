@@ -49,7 +49,7 @@ export default function Pricing() {
                     <div
                       style={{
                         position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)",
-                        background: "var(--accent)", color: "#fff", fontFamily: "var(--font-heading)",
+                        background: "var(--accent)", color: "var(--on-accent)", fontFamily: "var(--font-heading)",
                         fontWeight: 600, fontSize: "0.72rem", padding: "4px 14px", borderRadius: 50, whiteSpace: "nowrap",
                       }}
                     >
@@ -104,7 +104,7 @@ export default function Pricing() {
                       fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: "0.85rem",
                       padding: "12px 20px", borderRadius: 8, textDecoration: "none",
                       background: m.highlight ? "var(--accent)" : "transparent",
-                      color: m.highlight ? "#fff" : "var(--accent)",
+                      color: m.highlight ? "var(--on-accent)" : "var(--accent)",
                       border: m.highlight ? "none" : "1px solid rgba(var(--accent-rgb),0.4)",
                     }}
                   >
@@ -136,7 +136,7 @@ export default function Pricing() {
           <p style={{ color: "var(--muted)", fontSize: "0.95rem", marginBottom: 32, maxWidth: 440, margin: "0 auto 32px", lineHeight: 1.75 }}>
             Tell us what you're building — we'll follow up with a realistic scope and cost, not a sales pitch.
           </p>
-          <Link to="/contact" className="btn-primary" style={{ padding: "14px 32px" }}>Request an Estimate</Link>
+          <Link to="/contact" className="btn btn-primary" style={{ padding: "14px 32px" }}>Request an Estimate</Link>
         </div>
       </section>
     </Layout>

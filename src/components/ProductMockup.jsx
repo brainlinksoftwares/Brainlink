@@ -17,10 +17,10 @@ export function BrowserMockup({ accent = "var(--accent)", rows = 3, style }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderBottom: "1px solid var(--border)", background: "var(--bg-card2)" }}>
-        {["#E5E9F0", "#E5E9F0", "#E5E9F0"].map((c, i) => (
+        {["var(--mock-dot)", "var(--mock-dot)", "var(--mock-dot)"].map((c, i) => (
           <span key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />
         ))}
-        <div style={{ flex: 1, height: 16, borderRadius: 5, background: "#fff", border: "1px solid var(--border)", marginLeft: 8 }} />
+        <div style={{ flex: 1, height: 16, borderRadius: 5, background: "var(--bg-card)", border: "1px solid var(--border)", marginLeft: 8 }} />
       </div>
       <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ width: "55%", height: 12, borderRadius: 4, background: accent, opacity: 0.85 }} />
@@ -57,7 +57,7 @@ export function PhoneMockup({ accent = "var(--accent)", style }) {
         <div style={{ width: 28, height: 28, borderRadius: "50%", background: accent, opacity: 0.85, margin: "0 auto" }} />
         <div style={{ width: "70%", height: 7, borderRadius: 3, background: "var(--border)", margin: "4px auto 0" }} />
         {[1, 2, 3].map((i) => (
-          <div key={i} style={{ height: 30, borderRadius: 7, background: "#fff", border: "1px solid var(--border)" }} />
+          <div key={i} style={{ height: 30, borderRadius: 7, background: "var(--bg-card)", border: "1px solid var(--border)" }} />
         ))}
         <div style={{ height: 22, borderRadius: 7, background: accent, opacity: 0.9, marginTop: 4 }} />
       </div>

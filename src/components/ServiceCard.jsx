@@ -20,11 +20,11 @@ export default function ServiceCard({ service }) {
           width: 40,
           height: 40,
           borderRadius: 10,
-          background: "var(--accent-soft)",
+          background: "var(--blue-soft)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "var(--accent)",
+          color: "var(--blue)",
         }}
       >
         <Icon size={20} strokeWidth={1.75} aria-hidden="true" />

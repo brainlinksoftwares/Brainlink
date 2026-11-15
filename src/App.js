@@ -54,7 +54,7 @@ function StudioFallback() {
         width: 40,
         height: 40,
         borderRadius: 10,
-        background: 'linear-gradient(135deg, #315CFF 0%, #1A3BBB 100%)',
+        background: '#315CFF',
         color: '#FFFFFF',
         fontWeight: 700,
         fontSize: 14,

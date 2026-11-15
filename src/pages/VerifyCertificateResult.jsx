@@ -126,7 +126,7 @@ export default function VerifyCertificateResult() {
         noindex
       />
 
-      <div style={{ minHeight: "70vh", padding: "128px 24px 80px", background: "linear-gradient(180deg, #F8FAFF 0%, #EEF5FF 100%)" }}>
+      <div style={{ minHeight: "70vh", padding: "128px 24px 80px", background: "var(--bg-card2)" }}>
         <div className="container" style={{ maxWidth: 640 }}>
 
           {state.phase === "loading" && (
@@ -144,7 +144,7 @@ export default function VerifyCertificateResult() {
                 tone="danger"
                 icon={AlertTriangle}
                 heading="Invalid Certificate ID"
-                actions={<Link to="/verify-certificate" className="btn-primary" style={{ justifyContent: "center" }}>Back to Verification Form</Link>}
+                actions={<Link to="/verify-certificate" className="btn btn-primary" style={{ justifyContent: "center" }}>Back to Verification Form</Link>}
               >
                 <p style={{ marginBottom: 10 }}>The certificate ID or link you used isn't in a recognized format.</p>
                 <p>
@@ -163,8 +163,8 @@ export default function VerifyCertificateResult() {
                 heading="Certificate Not Found"
                 actions={
                   <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                    <Link to="/verify-certificate" className="btn-primary">Verify Another Certificate</Link>
-                    <Link to="/contact" className="btn-secondary">Contact Us</Link>
+                    <Link to="/verify-certificate" className="btn btn-primary">Verify Another Certificate</Link>
+                    <Link to="/contact" className="btn btn-outline btn-primary">Contact Us</Link>
                   </div>
                 }
               >
@@ -183,7 +183,7 @@ export default function VerifyCertificateResult() {
                 icon={AlertTriangle}
                 heading="Verification Temporarily Unavailable"
                 actions={
-                  <button onClick={fetchCertificate} className="btn-primary" style={{ justifyContent: "center" }}>
+                  <button onClick={fetchCertificate} className="btn btn-primary" style={{ justifyContent: "center" }}>
                     <RotateCw size={16} aria-hidden="true" /> Retry
                   </button>
                 }
@@ -230,7 +230,7 @@ export default function VerifyCertificateResult() {
                         href={cert.certificate_file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-secondary"
+                        className="btn btn-outline btn-primary"
                         style={{ width: "100%", justifyContent: "center", marginBottom: 20 }}
                       >
                         <FileText size={16} aria-hidden="true" /> View Certificate File

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 import logo from "../assets/logo/logo.png";
 import "../index.css";
 
@@ -53,62 +53,58 @@ export default function Header() {
     <>
       <a href="#main-content" className="skip-link">Skip to main content</a>
 
-      <nav
-        aria-label="Primary"
+      <header
         style={{
           position: "fixed",
           top: 0,
           left: 0,
           right: 0,
           zIndex: 1000,
-          background: scrolled ? "var(--nav-bg-scrolled)" : "rgba(255,255,255,0.86)",
-          backdropFilter: "saturate(180%) blur(8px)",
-          WebkitBackdropFilter: "saturate(180%) blur(8px)",
+          background: scrolled ? "var(--nav-bg-scrolled)" : "var(--nav-bg)",
+          backdropFilter: "saturate(180%) blur(12px)",
+          WebkitBackdropFilter: "saturate(180%) blur(12px)",
           borderBottom: "1px solid var(--border)",
           boxShadow: scrolled ? "var(--shadow-nav)" : "none",
-          transition: "box-shadow 0.2s ease, padding 0.2s ease",
+          transition: "box-shadow 0.2s ease, background 0.2s ease",
         }}
       >
-        <div
-          className="container"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: scrolled ? "12px 24px" : "16px 24px",
-            transition: "padding 0.2s ease",
-          }}
-        >
-          <Link to="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
-            <img src={logo} alt="" style={{ height: 26, width: 26, objectFit: "contain" }} />
-            <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "1rem", color: "var(--text)" }}>
-              Brainlink <span style={{ color: "var(--accent)" }}>Softwares</span>
-            </span>
-          </Link>
+        <nav aria-label="Primary" className="navbar container" style={{ padding: scrolled ? "6px 20px" : "10px 20px", transition: "padding 0.2s ease" }}>
+          <div className="navbar-start" style={{ width: "auto", flex: 1 }}>
+            <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+              <span className="brand-mark">
+                <img src={logo} alt="" style={{ height: 22, width: 22, objectFit: "contain" }} />
+              </span>
+              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "1.05rem", color: "var(--text)", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
+                Brainlink <span className="text-blue">Softwares</span>
+              </span>
+            </Link>
+          </div>
 
-          <ul className="desktop-nav nav-list">
-            {navLinks.map((l) => (
-              <li key={l.label}>
-                <Link
-                  to={l.to}
-                  className={isActive(l.to) ? "nav-link is-active" : "nav-link"}
-                  aria-current={isActive(l.to) ? "page" : undefined}
-                >
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div className="navbar-center desktop-nav">
+            <ul className="menu menu-horizontal nav-list">
+              {navLinks.map((l) => (
+                <li key={l.label}>
+                  <Link
+                    to={l.to}
+                    className={isActive(l.to) ? "nav-link is-active" : "nav-link"}
+                    aria-current={isActive(l.to) ? "page" : undefined}
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Link to="/contact" className="btn-primary cta-desktop-only" style={{ padding: "9px 18px", fontSize: "0.85rem" }}>
-              Start a Project
+          <div className="navbar-end" style={{ width: "auto", flex: 1, gap: 8 }}>
+            <Link to="/contact" className="btn btn-primary btn-sm cta-desktop-only" style={{ height: 38, minHeight: 38, padding: "0 16px" }}>
+              Start a Project <ArrowRight size={14} aria-hidden="true" />
             </Link>
 
             <button
               ref={menuBtnRef}
               onClick={() => setOpen((o) => !o)}
-              className="mobile-nav-btn icon-btn"
+              className="mobile-nav-btn btn btn-ghost btn-square btn-sm"
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
               aria-controls="mobile-menu"
@@ -116,7 +112,7 @@ export default function Header() {
               {open ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
             </button>
           </div>
-        </div>
+        </nav>
 
         {/* Mobile menu */}
         <div
@@ -125,29 +121,33 @@ export default function Header() {
           style={{
             maxHeight: open ? 640 : 0,
             overflow: "hidden",
-            transition: "max-height 0.2s ease",
+            transition: "max-height 0.25s ease",
             background: "var(--mobile-menu-bg)",
             borderTop: open ? "1px solid var(--border)" : "none",
+            flexDirection: "column",
           }}
         >
-          <div style={{ padding: "12px 20px 20px", display: "flex", flexDirection: "column", gap: 4 }}>
+          <ul className="menu" style={{ padding: "12px 16px 4px", width: "100%" }}>
             {navLinks.map((l) => (
-              <Link
-                key={l.label}
-                to={l.to}
-                onClick={() => setOpen(false)}
-                className={isActive(l.to) ? "mobile-nav-link is-active" : "mobile-nav-link"}
-                aria-current={isActive(l.to) ? "page" : undefined}
-              >
-                {l.label}
-              </Link>
+              <li key={l.label}>
+                <Link
+                  to={l.to}
+                  onClick={() => setOpen(false)}
+                  className={isActive(l.to) ? "mobile-nav-link is-active" : "mobile-nav-link"}
+                  aria-current={isActive(l.to) ? "page" : undefined}
+                >
+                  {l.label}
+                </Link>
+              </li>
             ))}
-            <Link to="/contact" onClick={() => setOpen(false)} className="btn-primary" style={{ marginTop: 14, justifyContent: "center" }}>
-              Start a Project
+          </ul>
+          <div style={{ padding: "8px 20px 20px" }}>
+            <Link to="/contact" onClick={() => setOpen(false)} className="btn btn-primary btn-block">
+              Start a Project <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
         </div>
-      </nav>
+      </header>
 
       <div style={{ height: 72 }} />
     </>

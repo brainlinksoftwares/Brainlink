@@ -120,7 +120,7 @@ export default function Contact() {
                 );
               })}
 
-              <a href={siteConfig.whatsappHref()} target="_blank" rel="noopener noreferrer" className="btn-whatsapp" style={{ marginTop: 16, width: "100%", justifyContent: "center", padding: "14px" }}>
+              <a href={siteConfig.whatsappHref()} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp" style={{ marginTop: 16, width: "100%", justifyContent: "center", padding: "14px" }}>
                 <WhatsAppIcon width={17} height={17} /> Chat on WhatsApp
               </a>
 
@@ -208,7 +208,7 @@ export default function Contact() {
                 </div>
                 {errors.consent && <p className="field-error-text">{errors.consent}</p>}
 
-                <button type="submit" disabled={status === "sending"} className="btn-primary" style={{ justifyContent: "center", padding: "14px", fontSize: "0.9rem", width: "100%", opacity: status === "sending" ? 0.7 : 1 }}>
+                <button type="submit" disabled={status === "sending"} className="btn btn-primary" style={{ justifyContent: "center", padding: "14px", fontSize: "0.9rem", width: "100%", opacity: status === "sending" ? 0.7 : 1 }}>
                   {status === "sending" ? (<><Loader2 size={16} className="spin" aria-hidden="true" /> Sending...</>) : "Send Message"}
                 </button>
 

@@ -245,7 +245,7 @@ export default function Careers() {
             </div>
             {errors.consent && <p className="field-error-text">{errors.consent}</p>}
 
-            <button type="submit" disabled={status === "sending"} className="btn-primary" style={{ justifyContent: "center", padding: "14px", width: "100%", opacity: status === "sending" ? 0.7 : 1 }}>
+            <button type="submit" disabled={status === "sending"} className="btn btn-primary" style={{ justifyContent: "center", padding: "14px", width: "100%", opacity: status === "sending" ? 0.7 : 1 }}>
               {status === "sending" ? (<><Loader2 size={16} className="spin" aria-hidden="true" /> Submitting...</>) : "Submit Application"}
             </button>
 

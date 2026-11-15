@@ -34,7 +34,7 @@ export default function Services() {
         title={<>Software Engineering, <span style={{ color: "var(--accent)" }}>End to End.</span></>}
         subtitle="From a first working prototype to enterprise-scale systems — engineering, design and support for every stage of a product's life."
       >
-        <Link to="/contact" className="btn-primary" style={{ fontSize: "0.95rem", padding: "14px 32px" }}>
+        <Link to="/contact" className="btn btn-primary" style={{ fontSize: "0.95rem", padding: "14px 32px" }}>
           Start Your Project
         </Link>
       </PageHero>
@@ -143,7 +143,7 @@ export default function Services() {
             ))}
           </div>
           <div style={{ textAlign: "center", marginTop: 40 }}>
-            <Link to="/pricing" className="btn-secondary" style={{ fontSize: "0.9rem" }}>
+            <Link to="/pricing" className="btn btn-outline btn-primary" style={{ fontSize: "0.9rem" }}>
               See Pricing & Engagement Details <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
@@ -167,7 +167,7 @@ export default function Services() {
           <p style={{ color: "var(--muted)", fontSize: "1rem", marginBottom: 36, lineHeight: 1.75, maxWidth: 460, margin: "0 auto 36px" }}>
             Tell us about your business. We'll recommend what will actually work for you — no upselling.
           </p>
-          <Link to="/contact" className="btn-primary" style={{ padding: "14px 32px" }}>Get a Free Consultation</Link>
+          <Link to="/contact" className="btn btn-primary" style={{ padding: "14px 32px" }}>Get a Free Consultation</Link>
         </div>
       </section>
 

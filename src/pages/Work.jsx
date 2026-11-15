@@ -26,39 +26,31 @@ export default function Work() {
       <PageHero
         label="Case Studies"
         title="Our Work"
-        subtitle="Verified engagements only — no invented clients, metrics or results."
+        subtitle="Client projects, our technology partnership with Code ACE and ExamShield — our own product. Verified work only, no invented clients or metrics."
       />
 
       <section className="section">
         <div className="container">
           {portfolioCategories.length > 2 && (
-            <div role="group" aria-label="Filter projects by category" style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
-              {portfolioCategories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActive(cat)}
-                  aria-pressed={active === cat}
-                  style={{
-                    padding: "9px 20px",
-                    borderRadius: 50,
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 600,
-                    fontSize: "0.82rem",
-                    cursor: "pointer",
-                    border: active === cat ? "1px solid var(--accent)" : "1px solid var(--border)",
-                    background: active === cat ? "rgba(var(--accent-rgb),0.08)" : "var(--bg-card)",
-                    color: active === cat ? "var(--accent)" : "var(--muted)",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div role="group" aria-label="Filter projects by category" style={{ display: "flex", justifyContent: "center", marginBottom: 48 }}>
+              <div className="join" style={{ flexWrap: "wrap", justifyContent: "center" }}>
+                {portfolioCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActive(cat)}
+                    aria-pressed={active === cat}
+                    className={`btn btn-sm join-item ${active === cat ? "btn-primary" : "btn-ghost"}`}
+                    style={active === cat ? undefined : { border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--muted)" }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
           {filtered.length > 0 ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 32 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))", gap: 32 }}>
               {filtered.map((project) => (
                 <Reveal key={project.id} id={project.id} style={{ scrollMarginTop: 100 }}>
                   <ProjectCard project={project} detailed />
@@ -79,7 +71,7 @@ export default function Work() {
           <p style={{ color: "var(--muted)", fontSize: "0.95rem", marginBottom: 32, maxWidth: 440, margin: "0 auto 32px", lineHeight: 1.75 }}>
             Tell us what you're building and we'll give you an honest read on scope and approach.
           </p>
-          <Link to="/contact" className="btn-primary" style={{ padding: "14px 32px" }}>Start a Project</Link>
+          <Link to="/contact" className="btn btn-primary" style={{ padding: "14px 32px" }}>Start a Project</Link>
         </div>
       </section>
     </Layout>

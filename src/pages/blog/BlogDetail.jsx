@@ -104,7 +104,7 @@ export default function BlogDetail() {
           <div style={{ textAlign: "center", padding: "80px 0" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "clamp(1.5rem,4vw,2.5rem)", color: "var(--text)", marginBottom: 12 }}>Article Not Found</h1>
             <p style={{ color: "var(--muted)", marginBottom: 24 }}>The post you're looking for was moved or deleted.</p>
-            <Link to="/blog" className="btn-primary">Back to Blog</Link>
+            <Link to="/blog" className="btn btn-primary">Back to Blog</Link>
           </div>
         ) : (
           <article style={{ maxWidth: 760, margin: "0 auto" }}>
